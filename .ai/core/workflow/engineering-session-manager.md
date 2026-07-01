@@ -73,15 +73,43 @@ Keep the user focused on the goal. Continuously update `.ai/context/session.md` 
 - If they get stuck (Current Blocker), work with Domain Skills and Implementation Coach to unblock them, tracking failed attempts in `.ai/context/session.md`.
 - Ensure they are progressing towards the Definition of Done.
 
-### 3. End of Session (Auto-Progression)
-When the Definition of Done is met, execute the automatic progression workflow:
-1. Run a Review of the code.
-2. Ask Reflection Questions (Brief: What surprised you? What did you misunderstand?).
-3. **Update Project Memory**: Transfer permanent decisions and mastered concepts (trigger Project Memory Manager).
-4. **Update Learning Progress**: Evaluate if the milestone is complete (trigger Learning Progress Manager).
-5. **Generate Next Session**: Automatically create the `.ai/context/session.md` for the next objective. Never wait for the user to ask "what's next?".
-6. **Update Workspace Status**: Refresh the status with the new session info.
-7. **Present Dashboard**: Show the updated Engineering Dashboard to kick off the new session.
+### 3. End of Session (Severity-Branched Close)
+
+When the Definition of Done is met, determine the review outcome before advancing the session.
+
+**Step 1 — Run Structured Review**
+
+Execute a full code review (Code Review skill primary, Domain Skills supporting, Architecture Mentor supporting). The verdict is the branch selector.
+
+**Branch A — Verdict: Ready to Merge or Needs Minor Changes**
+
+The engineer's work is fundamentally correct. Minor polish is valuable but not blocking.
+
+1. AI produces a **polished/improved version** of the engineer's implementation with inline comments explaining each improvement.
+2. Trigger Mistake Logger: log lightweight observations (patterns only — no full entry required if mistakes are trivial).
+3. Present: polished code + brief review summary to engineer.
+4. **Auto-advance immediately**:
+   - Update Learning Progress (trigger Learning Progress Manager).
+   - Update Project Memory (trigger Project Memory Manager).
+   - Mark Session Complete.
+   - Generate Next Session.
+   - Update Workspace Status.
+   - Present Engineering Dashboard for the new session.
+
+**Branch B — Verdict: Needs Major Changes or Do Not Merge**
+
+The engineer's work contains a fundamental error: logic bugs, security holes, wrong architecture, or a conceptual misunderstanding.
+
+1. Trigger Mistake Logger: generate a **full entry** in `.ai/docs/mistakes.md` (Date, Session, Milestone, Mistake, Explanation, Why it happened, Recommended reading, Recommended practice, Correct solution, Patterns to remember).
+2. Present: full review + mistakes entry to the engineer.
+3. **STOP. Do NOT produce a polished version. Do NOT advance the session.**
+4. Wait for the engineer to fix and resubmit, or explicitly say "Let's continue."
+5. On resubmission: repeat the review cycle from Step 1. Apply Branch A or B based on the new verdict.
+
+**Severity Classification Reference**:
+- Branch A (auto-advance): Code Review returns "Ready to Merge" or "Needs Minor Changes"
+- Branch B (gate): Code Review returns "Needs Major Changes" or "Do Not Merge"
+
 
 ## Boundaries
 

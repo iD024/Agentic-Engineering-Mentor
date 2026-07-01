@@ -7,9 +7,22 @@
 - **Estimated Time:** How long should this session take?
 
 ## Implementation Plan
+
+### Task Definition (all fields mandatory — omitting any field is a violation)
+
+| Field | Value |
+|---|---|
+| **Engineering Goal** | What will be built — a concrete, scoped deliverable |
+| **Learning Goal** | What concept the engineer will understand by completing this task |
+| **Definition of Done** | Strict, unambiguous exit criteria. When is this task complete? |
+| **Success Criteria** | Functional requirements. What must work correctly? |
+| **Potential Pitfalls** | Common mistakes and rabbit holes to avoid |
+| **Estimated Time** | Realistic time estimate in minutes |
+| **Files Expected to Change** | The specific files that will be created or modified |
+
+### Implementation Details
 - **Current Task:** The specific step being attempted right now.
 - **Why This Task Exists:** The engineering reasoning for doing this now.
-- **Potential Pitfalls:** Common mistakes to avoid.
 - **Current Files:** The files being actively modified.
 
 ## Exit Criteria

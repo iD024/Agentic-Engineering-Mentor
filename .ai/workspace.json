@@ -21,7 +21,8 @@
     "learningProgress": "missing",
     "workspaceStatus": "missing",
     "milestones": "missing",
-    "session": "missing"
+    "session": "missing",
+    "mistakeLogger": "missing"
   },
   "profiles": {
     "installed": [],

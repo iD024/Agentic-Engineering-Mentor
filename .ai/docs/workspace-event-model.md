@@ -27,6 +27,8 @@ The `Workspace Event Model` transforms the architecture from a continuous execut
 - **Session Ended**: Fired when the session is closed out. Triggers session memory updates.
 - **Memory Updated**: Fired when project memory consolidates new learnings.
 - **Learning Progress Updated**: Fired when the user completes a curriculum step.
+- **Review Completed**: Fired when the code review and Mistake Logger update are both done. Carries a `branch` payload: `A` (minor/none) or `B` (major/critical). Branch A triggers auto-advance. Branch B triggers session gate — AI stops and waits for engineer fix and resubmission.
+- **Review Branch Resolved**: Fired after Branch B when the engineer fixes and resubmits, and the re-review returns a Branch A verdict. Triggers the same auto-advance flow as a primary Branch A outcome.
 
 ## Usage
 - The `Workspace Synchronizer` relies on these events to determine what actually requires updating.
