@@ -1,0 +1,64 @@
+{
+  "workspaceSchema": "1.0",
+  "projectName": "Antigravity Engineering Mentor",
+  "workspaceVersion": "0.1.0",
+  "workspace": {
+    "initialized": false
+  },
+  "initialization": {
+    "project_understanding": "pending",
+    "repository_knowledge": "pending",
+    "curriculum": "pending",
+    "project_memory": "pending",
+    "learning_progress": "pending",
+    "workspace_status": "pending",
+    "milestone": "pending",
+    "session": "pending"
+  },
+  "currentMilestone": "Workspace Relocation",
+  "workspaceState": "Development",
+  "lastSynchronization": "",
+  "repositoryFingerprint": "",
+  "profiles": {
+    "installed": [
+      "web/nextjs",
+      "backend/supabase",
+      "embedded/systems-programming"
+    ],
+    "active": [
+      "web/nextjs",
+      "backend/supabase"
+    ]
+  },
+  "skills": {
+    "enabled": [
+      "engineering-orchestrator",
+      "workspace-synchronizer",
+      "skill-registry",
+      "project-lifecycle-manager",
+      "repository-context-analyzer",
+      "project-memory-manager",
+      "engineering-session-manager",
+      "implementation-workflow-manager",
+      "engineering-curriculum",
+      "learning-progress-manager",
+      "implementation-coach",
+      "code-review",
+      "architecture-mentor",
+      "architecture-evolution-advisor",
+      "ai-dependency-detector"
+    ]
+  },
+  "contextVersions": {
+    "projectContext": "1.0",
+    "repositoryContext": "1.0",
+    "projectMemory": "1.0",
+    "curriculum": "1.0",
+    "session": "1.0",
+    "learningProgress": "1.0"
+  },
+  "featureFlags": {
+    "strictMode": true,
+    "experimentalSkills": false
+  }
+}
