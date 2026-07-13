@@ -40,5 +40,8 @@ export const TOKENS = {
 
   // Stage 3 tokens
   EventBus: createToken<EventBus>('EventBus'),
+
+  // Stage 4 tokens (CQRS)
+  QueryBus: createToken<import('../../core/cqrs/interfaces.js').IQueryBus>('QueryBus'),
 } as const;
 

@@ -36,7 +36,15 @@ import { LoggerSubscriber } from '../events/subscribers/LoggerSubscriber.js';
 import { MetricsSubscriber } from '../events/subscribers/MetricsSubscriber.js';
 import { HealthMonitorSubscriber } from '../events/subscribers/HealthMonitorSubscriber.js';
 import { ExporterSubscriber } from '../events/subscribers/ExporterSubscriber.js';
-
+import { QueryBus } from '../core/cqrs/QueryBus.js';
+import { IgnoreManager, FileScanner, RepositoryScanner } from '../repository/index.js';
+import { TreeSitterManager, ParserRegistry, ParserFactory } from '../parser/index.js';
+import { SymbolTable } from '../symbols/index.js';
+import { DependencyGraph, ImpactAnalyzer } from '../dependencies/index.js';
+import { GraphBuilder } from '../graph/index.js';
+import { RepositoryCache } from '../repository-cache/index.js';
+import { RepositoryPlanner } from '../planner/index.js';
+import * as Queries from '../repository-queries/index.js';
 /** Built-in health check: configuration status. */
 class ConfigHealthCheck implements IHealthCheck {
   readonly name = 'configuration';
@@ -202,6 +210,34 @@ export class Bootstrap {
       
       logger.info('EventBus messaging layer initialised');
 
+      // 17.6: QueryBus (CQRS)
+      const queryBus = new QueryBus();
+      logger.info('QueryBus (CQRS) layer initialised');
+
+      // 17.7: Repository Intelligence Engine (Stage 5)
+      await TreeSitterManager.init();
+      const parserRegistry = new ParserRegistry();
+      const parserFactory = new ParserFactory(parserRegistry);
+      
+      const ignoreManager = new IgnoreManager(config.workspaceRoot);
+      const fileScanner = new FileScanner(ignoreManager);
+      
+      const repoScanner = new RepositoryScanner(fileScanner, parserFactory, eventBus, config.workspaceRoot);
+      const repoCache = new RepositoryCache(database);
+      const symbolTable = new SymbolTable();
+      const depGraph = new DependencyGraph();
+      const repoGraph = GraphBuilder.build();
+      const impactAnalyzer = new ImpactAnalyzer(depGraph);
+      const repoPlanner = new RepositoryPlanner(impactAnalyzer, symbolTable);
+
+      queryBus.register(new Queries.FindDefinitionQueryHandler(symbolTable));
+      queryBus.register(new Queries.FindReferencesQueryHandler(symbolTable));
+      queryBus.register(new Queries.RepositorySummaryQueryHandler(symbolTable, depGraph));
+      queryBus.register(new Queries.ImpactAnalysisQueryHandler(repoPlanner.impact));
+      queryBus.register(new Queries.FindSymbolQueryHandler(symbolTable));
+      queryBus.register(new Queries.ListModulesQueryHandler(symbolTable));
+      logger.info('Repository Intelligence Engine initialised');
+
       // 18: Register all services in container
       container.registerInstance(TOKENS.Config, configProvider);
       container.registerInstance(TOKENS.Logger, logger);
@@ -214,6 +250,7 @@ export class Bootstrap {
       container.registerInstance(TOKENS.Database, database);
       container.registerInstance(TOKENS.StateManager, stateManager);
       container.registerInstance(TOKENS.EventBus, eventBus);
+      container.registerInstance(TOKENS.QueryBus, queryBus);
 
       // 19: Boot
       logger.info('All services wired, booting kernel...');
