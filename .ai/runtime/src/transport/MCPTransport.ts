@@ -19,8 +19,8 @@ export class MCPTransport extends Transport {
   }
 
   async send(message: TransportMessage): Promise<void> {
-    // Stringify and write to stdout
-    const payload = JSON.stringify(message) + '\n';
+    // Stringify only the payload and write to stdout
+    const payload = JSON.stringify(message.payload) + '\n';
     process.stdout.write(payload);
   }
 
@@ -31,7 +31,11 @@ export class MCPTransport extends Transport {
       const msgs = chunk.split('\n').filter(Boolean);
       for (const msg of msgs) {
         const parsed = JSON.parse(msg);
-        this.handler.handleMessage(parsed).catch(err => {
+        const transportMsg: TransportMessage = {
+          type: 'mcp',
+          payload: parsed
+        };
+        this.handler.handleMessage(transportMsg).catch(err => {
           this.handler?.handleError(err instanceof Error ? err : new Error(String(err)));
         });
       }

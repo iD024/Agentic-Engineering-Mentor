@@ -6,7 +6,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc",
+    "build": "tsc && cp -r src/database/migrations dist/src/database/",
     "start": "node dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",

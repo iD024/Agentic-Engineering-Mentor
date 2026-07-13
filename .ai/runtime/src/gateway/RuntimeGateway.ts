@@ -5,10 +5,13 @@ import { ExecutionContext } from '../core/execution/ExecutionContext.js';
 import { ProtocolError } from '../errors/GatewayErrors.js';
 // We'll import ToolRegistry, SessionManager etc later once built
 
+import type { ToolRegistry } from '../tool-registry/ToolRegistry.js';
+
 export interface GatewayOptions {
   logger: ILogger;
   workspaceRoot: string;
   runtimeVersion: string;
+  toolRegistry: ToolRegistry;
 }
 
 /**
@@ -19,6 +22,7 @@ export class RuntimeGateway implements TransportHandler {
   private readonly logger: ILogger;
   private readonly workspaceRoot: string;
   private readonly runtimeVersion: string;
+  private readonly toolRegistry: ToolRegistry;
   private transport?: Transport;
   private protocol?: ProtocolHandler;
   
@@ -26,12 +30,13 @@ export class RuntimeGateway implements TransportHandler {
     this.logger = options.logger;
     this.workspaceRoot = options.workspaceRoot;
     this.runtimeVersion = options.runtimeVersion;
+    this.toolRegistry = options.toolRegistry;
   }
 
   registerTransport(transport: Transport, protocol: ProtocolHandler): void {
     this.transport = transport;
     this.protocol = protocol;
-    transport.setHandler(this);
+    this.transport.setHandler(this);
   }
 
   async start(): Promise<void> {
@@ -73,7 +78,6 @@ export class RuntimeGateway implements TransportHandler {
 
     try {
       // Routing logic (MCPRouter will handle this if we extract it)
-      // For now, we will just echo back a result as a placeholder
       if (parsed.method) {
         // Handle Request/Notification
         const result = await this.routeRequest(parsed, context);
@@ -96,17 +100,81 @@ export class RuntimeGateway implements TransportHandler {
   }
 
   private async routeRequest(request: ProtocolMessage, context: ExecutionContext): Promise<any> {
+    if (request.method === 'initialize') {
+      return {
+        protocolVersion: '2024-11-05',
+        capabilities: {
+          tools: {} // We will list tools when tools/list is called
+        },
+        serverInfo: {
+          name: 'antigravity-mcp-server',
+          version: this.runtimeVersion
+        }
+      };
+    }
+
+    if (request.method === 'tools/list') {
+      const tools = this.toolRegistry.getAll().map(t => ({
+        name: t.descriptor.name,
+        description: t.descriptor.description,
+        inputSchema: t.descriptor.parameters
+      }));
+      return { tools };
+    }
+
+    if (request.method === 'tools/call') {
+      const params = request.params as { name: string; arguments?: Record<string, unknown> };
+      const tool = this.toolRegistry.get(params.name);
+      if (!tool) {
+        throw new Error(`Tool not found: ${params.name}`);
+      }
+
+      const result = await tool.execute(params.arguments || {}, Object.assign(context, { toolName: params.name }) as any);
+      
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `Error: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      const responseText = typeof result.data === 'string' ? result.data : JSON.stringify(result.data, null, 2);
+      return {
+        content: [{ type: 'text', text: responseText }]
+      };
+    }
+
     // This will route to MCPRouter initially
     return { status: 'ok', method: request.method };
   }
 
   async listTools(context: ExecutionContext): Promise<any> {
-    // Placeholder for calling ToolRegistry
-    return { tools: [] };
+    const tools = this.toolRegistry.getAll().map(t => ({
+      name: t.descriptor.name,
+      description: t.descriptor.description,
+      inputSchema: t.descriptor.parameters
+    }));
+    return { tools };
   }
 
   async executeTool(name: string, args: Record<string, any>, context: ExecutionContext): Promise<any> {
-    // Placeholder for calling ToolExecutionPipeline
-    return { result: `Executed ${name}` };
+    const tool = this.toolRegistry.get(name);
+    if (!tool) {
+      throw new Error(`Tool not found: ${name}`);
+    }
+
+    const result = await tool.execute(args, Object.assign(context, { toolName: name }) as any);
+    
+    if (!result.success) {
+      return {
+        content: [{ type: 'text', text: `Error: ${result.error}` }],
+        isError: true
+      };
+    }
+
+    const responseText = typeof result.data === 'string' ? result.data : JSON.stringify(result.data, null, 2);
+    return {
+      content: [{ type: 'text', text: responseText }]
+    };
   }
 }

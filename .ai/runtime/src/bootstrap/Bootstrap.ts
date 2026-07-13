@@ -303,7 +303,8 @@ export class Bootstrap {
       const gateway = new RuntimeGateway({
         logger: loggerFactory.createLogger('Gateway'),
         workspaceRoot: config.workspaceRoot,
-        runtimeVersion: '2.0.0'
+        runtimeVersion: '2.0.0',
+        toolRegistry
       });
       
       const mcpServer = new MCPServer(gateway);
@@ -391,6 +392,10 @@ export class Bootstrap {
         overall: report.overall,
         checks: Object.keys(report.checks).length,
       });
+
+      // Start the MCP Server to listen on stdio and keep the process alive
+      await mcpServer.start();
+      logger.info('MCP Server started and listening on stdio');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (logger) {

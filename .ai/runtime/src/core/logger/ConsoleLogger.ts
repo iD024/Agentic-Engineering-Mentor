@@ -71,10 +71,9 @@ export class ConsoleLogger implements ILogger {
 
     const formatted = `[${timestamp}] [${label}]${prefixSegment} ${message}${contextSegment}\n`;
 
-    if (level >= LogLevel.ERROR) {
-      process.stderr.write(formatted);
-    } else {
-      process.stdout.write(formatted);
-    }
+    // IMPORTANT: When running as an MCP server, stdout MUST be reserved exclusively 
+    // for JSON-RPC messages. Any human-readable logs written to stdout will corrupt
+    // the MCP protocol and break the connection. Therefore, ALL logs go to stderr.
+    process.stderr.write(formatted);
   }
 }
