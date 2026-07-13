@@ -1,4 +1,6 @@
-import Parser from 'web-tree-sitter';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const Parser = require('web-tree-sitter').Parser || require('web-tree-sitter');
 import type { ASTNode } from '../ast/ASTNode.js';
 import { ASTBuilder } from '../ast/ASTBuilder.js';
 

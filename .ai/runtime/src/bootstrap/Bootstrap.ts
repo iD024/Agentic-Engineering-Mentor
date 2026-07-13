@@ -182,6 +182,10 @@ export class Bootstrap {
       // 11: Database + Migrations
       const dbDir = path.join(config.workspaceRoot, '.ai', 'runtime');
       const dbPath = path.join(dbDir, 'workspace.db');
+      
+      const fs = await import('node:fs');
+      fs.mkdirSync(dbDir, { recursive: true });
+      
       const dbConfig: DatabaseConfig = {
         path: config.nodeEnv === 'test' ? ':memory:' : dbPath,
         walMode: true,
