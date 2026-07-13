@@ -6,6 +6,7 @@ import type { IHealthMonitor } from '../../interfaces/IHealthCheck.js';
 import type { IKernel } from '../../interfaces/IKernel.js';
 import type { Database } from '../../database/Database.js';
 import type { StateManager } from '../../state/StateManager.js';
+import type { EventBus } from '../../events/bus/EventBus.js';
 
 /**
  * Creates a strongly typed service token.
@@ -36,5 +37,8 @@ export const TOKENS = {
   // Stage 2 tokens
   Database: createToken<Database>('Database'),
   StateManager: createToken<StateManager>('StateManager'),
+
+  // Stage 3 tokens
+  EventBus: createToken<EventBus>('EventBus'),
 } as const;
 

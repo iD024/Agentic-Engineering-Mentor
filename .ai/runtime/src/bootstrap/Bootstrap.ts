@@ -28,6 +28,14 @@ import { MilestoneRepository } from '../repositories/MilestoneRepository.js';
 import { DependencyRepository } from '../repositories/DependencyRepository.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { StateManager } from '../state/StateManager.js';
+import { EventBus } from '../events/bus/EventBus.js';
+import { ValidationMiddleware } from '../events/middleware/ValidationMiddleware.js';
+import { LoggingMiddleware } from '../events/middleware/LoggingMiddleware.js';
+import { MetricsMiddleware } from '../events/middleware/MetricsMiddleware.js';
+import { LoggerSubscriber } from '../events/subscribers/LoggerSubscriber.js';
+import { MetricsSubscriber } from '../events/subscribers/MetricsSubscriber.js';
+import { HealthMonitorSubscriber } from '../events/subscribers/HealthMonitorSubscriber.js';
+import { ExporterSubscriber } from '../events/subscribers/ExporterSubscriber.js';
 
 /** Built-in health check: configuration status. */
 class ConfigHealthCheck implements IHealthCheck {
@@ -181,6 +189,19 @@ export class Bootstrap {
       healthMonitor.register(new RuntimeStateHealthCheck(() => kernel.state));
       healthMonitor.register(new DatabaseHealthCheck(database));
 
+      // 17.5: EventBus & Messaging Layer
+      const eventBus = new EventBus();
+      eventBus.use(new ValidationMiddleware());
+      eventBus.use(new LoggingMiddleware());
+      eventBus.use(new MetricsMiddleware());
+
+      eventBus.subscribe(new LoggerSubscriber());
+      eventBus.subscribe(new MetricsSubscriber());
+      eventBus.subscribe(new HealthMonitorSubscriber());
+      eventBus.subscribe(new ExporterSubscriber());
+      
+      logger.info('EventBus messaging layer initialised');
+
       // 18: Register all services in container
       container.registerInstance(TOKENS.Config, configProvider);
       container.registerInstance(TOKENS.Logger, logger);
@@ -192,6 +213,7 @@ export class Bootstrap {
       container.registerInstance(TOKENS.Runtime, runtime);
       container.registerInstance(TOKENS.Database, database);
       container.registerInstance(TOKENS.StateManager, stateManager);
+      container.registerInstance(TOKENS.EventBus, eventBus);
 
       // 19: Boot
       logger.info('All services wired, booting kernel...');
