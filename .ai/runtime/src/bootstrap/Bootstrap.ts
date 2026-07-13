@@ -47,6 +47,7 @@ import { RepositoryPlanner } from '../planner/index.js';
 import * as Queries from '../repository-queries/index.js';
 import * as Knowledge from '../knowledge/index.js';
 import { CommandBus } from '../core/cqrs/CommandBus.js';
+import * as Agents from '../agents/index.js';
 import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
 import { ToolRegistry } from '../tool-registry/ToolRegistry.js';
 import { SessionManager } from '../sessions/SessionManager.js';
@@ -291,6 +292,25 @@ export class Bootstrap {
 
       logger.info('Runtime Gateway (Stage 6) initialised');
 
+      // 17.10: Pedagogical Agent Platform (Stage 8)
+      const agentRegistry = new Agents.AgentRegistry();
+      const agentLoader = new Agents.AgentLoader(agentRegistry);
+      
+      const agentRuntime = new Agents.AgentRuntime({
+        registry: agentRegistry,
+        logger: loggerFactory.createLogger('AgentRuntime'),
+      });
+
+      // Load Built-in Pedagogical Agents
+      agentLoader.loadPlugins([
+        new Agents.PedagogicalOrchestrator(),
+        new Agents.CurriculumStrategist(),
+        new Agents.ImplementationCoach(),
+        new Agents.CodeDependencyValidator()
+      ]);
+
+      logger.info('Pedagogical Agent Platform (Stage 8) initialised');
+
       // 18: Register all services in container
       container.registerInstance(TOKENS.Config, configProvider);
       container.registerInstance(TOKENS.Logger, logger);
@@ -310,6 +330,8 @@ export class Bootstrap {
       container.registerInstance(TOKENS.SessionManager, sessionManager);
       container.registerInstance(TOKENS.ExecutionTracer, executionTracer);
       container.registerInstance(TOKENS.MetricsCollector, metricsCollector);
+      container.registerInstance(TOKENS.AgentRegistry, agentRegistry);
+      container.registerInstance(TOKENS.AgentRuntime, agentRuntime);
 
       // 19: Boot
       logger.info('All services wired, booting kernel...');

@@ -51,4 +51,8 @@ export const TOKENS = {
   SessionManager: createToken<import('../../sessions/SessionManager.js').SessionManager>('SessionManager'),
   ExecutionTracer: createToken<import('../../telemetry/ExecutionTracer.js').ExecutionTracer>('ExecutionTracer'),
   MetricsCollector: createToken<import('../../telemetry/MetricsCollector.js').MetricsCollector>('MetricsCollector'),
+
+  // Stage 8 tokens (Agent Platform)
+  AgentRegistry: createToken<import('../../agents/agent-registry/AgentRegistry.js').AgentRegistry>('AgentRegistry'),
+  AgentRuntime: createToken<import('../../agents/agent-runtime/AgentRuntime.js').AgentRuntime>('AgentRuntime'),
 } as const;
