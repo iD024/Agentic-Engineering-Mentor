@@ -4,6 +4,8 @@ import type { IConfigProvider } from '../../interfaces/IConfigProvider.js';
 import type { ILifecycleManager, ILifecycle } from '../../interfaces/ILifecycle.js';
 import type { IHealthMonitor } from '../../interfaces/IHealthCheck.js';
 import type { IKernel } from '../../interfaces/IKernel.js';
+import type { Database } from '../../database/Database.js';
+import type { StateManager } from '../../state/StateManager.js';
 
 /**
  * Creates a strongly typed service token.
@@ -30,5 +32,9 @@ export const TOKENS = {
   HealthMonitor: createToken<IHealthMonitor>('HealthMonitor'),
   Kernel: createToken<IKernel>('Kernel'),
   Runtime: createToken<ILifecycle>('Runtime'),
+
+  // Stage 2 tokens
+  Database: createToken<Database>('Database'),
+  StateManager: createToken<StateManager>('StateManager'),
 } as const;
 

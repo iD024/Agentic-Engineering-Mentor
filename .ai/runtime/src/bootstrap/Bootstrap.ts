@@ -1,8 +1,10 @@
+import path from 'node:path';
 import type { ILogger } from '../interfaces/ILogger.js';
 import type { IHealthCheck, HealthStatus } from '../interfaces/IHealthCheck.js';
 import type { IConfigProvider } from '../interfaces/IConfigProvider.js';
 import type { ILoggerFactory } from '../interfaces/ILogger.js';
 import type { RuntimeState } from '../kernel/RuntimeState.js';
+import type { RuntimeContext } from '../types/RuntimeContext.js';
 import { ConfigLoader } from '../core/config/ConfigLoader.js';
 import { ConfigValidator } from '../core/config/ConfigValidator.js';
 import { ConfigProvider } from '../core/config/ConfigProvider.js';
@@ -15,70 +17,48 @@ import { RuntimeEvents } from '../core/events/RuntimeEvents.js';
 import { HealthMonitor } from '../core/health/HealthMonitor.js';
 import { Kernel } from '../kernel/Kernel.js';
 import { Runtime } from '../runtime/Runtime.js';
-import type { RuntimeContext } from '../types/RuntimeContext.js';
+import { Database } from '../database/Database.js';
+import type { DatabaseConfig } from '../database/DatabaseConfig.js';
+import { MigrationRunner } from '../database/MigrationRunner.js';
+import { DatabaseHealthCheck } from '../database/DatabaseHealthCheck.js';
+import { WorkspaceRepository } from '../repositories/WorkspaceRepository.js';
+import { SessionRepository } from '../repositories/SessionRepository.js';
+import { LearningRepository } from '../repositories/LearningRepository.js';
+import { MilestoneRepository } from '../repositories/MilestoneRepository.js';
+import { DependencyRepository } from '../repositories/DependencyRepository.js';
+import { SettingsRepository } from '../repositories/SettingsRepository.js';
+import { StateManager } from '../state/StateManager.js';
 
-/**
- * Built-in health check: configuration status.
- */
+/** Built-in health check: configuration status. */
 class ConfigHealthCheck implements IHealthCheck {
   readonly name = 'configuration';
   private readonly config: IConfigProvider;
-
-  constructor(config: IConfigProvider) {
-    this.config = config;
-  }
-
+  constructor(config: IConfigProvider) { this.config = config; }
   async check(): Promise<HealthStatus> {
     const all = this.config.getAll();
-    return {
-      healthy: true,
-      message: 'Configuration loaded and validated',
-      details: {
-        nodeEnv: all.nodeEnv,
-        workspaceRoot: all.workspaceRoot,
-      },
-    };
+    return { healthy: true, message: 'Configuration loaded and validated',
+      details: { nodeEnv: all.nodeEnv, workspaceRoot: all.workspaceRoot } };
   }
 }
 
-/**
- * Built-in health check: logger status.
- */
+/** Built-in health check: logger status. */
 class LoggerHealthCheck implements IHealthCheck {
   readonly name = 'logger';
   private readonly factory: ILoggerFactory;
-
-  constructor(factory: ILoggerFactory) {
-    this.factory = factory;
-  }
-
+  constructor(factory: ILoggerFactory) { this.factory = factory; }
   async check(): Promise<HealthStatus> {
-    return {
-      healthy: true,
-      message: 'Logger active',
-      details: { level: this.factory.level },
-    };
+    return { healthy: true, message: 'Logger active', details: { level: this.factory.level } };
   }
 }
 
-/**
- * Built-in health check: runtime state.
- */
+/** Built-in health check: runtime state. */
 class RuntimeStateHealthCheck implements IHealthCheck {
   readonly name = 'runtimeState';
   private readonly getState: () => RuntimeState;
-
-  constructor(getState: () => RuntimeState) {
-    this.getState = getState;
-  }
-
+  constructor(getState: () => RuntimeState) { this.getState = getState; }
   async check(): Promise<HealthStatus> {
     const state = this.getState();
-    return {
-      healthy: state === 'READY',
-      message: `Runtime state: ${state}`,
-      details: { state },
-    };
+    return { healthy: state === 'READY', message: `Runtime state: ${state}`, details: { state } };
   }
 }
 
@@ -88,30 +68,32 @@ class RuntimeStateHealthCheck implements IHealthCheck {
  * Static entry point that creates all core services, owns the ServiceContainer,
  * wires dependencies, and hands control to the Kernel. This is the sole
  * location of service construction in the entire application.
+ *
+ * Stage 2 startup sequence:
+ * 1.  Load configuration from environment
+ * 2.  Validate configuration via Zod
+ * 3.  Create immutable config provider
+ * 4.  Create logger factory and bootstrap logger
+ * 5.  Create service container
+ * 6.  Create lifecycle manager
+ * 7.  Create runtime events emitter
+ * 8.  Create Kernel
+ * 9.  Create shutdown handler and install signal hooks
+ * 10. Build base RuntimeContext
+ * 11. Open Database and run MigrationRunner
+ * 12. Create repositories
+ * 13. Create StateManager
+ * 14. Build full RuntimeContext (with stateManager)
+ * 15. Create Runtime (receives full context + database)
+ * 16. Register Runtime with lifecycle manager
+ * 17. Create health monitor with built-in + database checks
+ * 18. Register all services in container
+ * 19. Boot Kernel
  */
 export class Bootstrap {
-  /**
-   * Boots the application.
-   *
-   * Deterministic startup sequence:
-   * 1. Load configuration from environment
-   * 2. Validate configuration via Zod
-   * 3. Create immutable config provider
-   * 4. Create logger factory and bootstrap logger
-   * 5. Create service container (Bootstrap owns this)
-   * 6. Create lifecycle manager
-   * 7. Create runtime events emitter
-   * 8. Create Kernel (receives deps via constructor)
-   * 9. Create shutdown handler and install signal hooks
-   * 10. Build RuntimeContext
-   * 11. Create Runtime (receives context via constructor)
-   * 12. Register Runtime with lifecycle manager
-   * 13. Create and register health checks
-   * 14. Register all services in container
-   * 15. Boot the Kernel
-   */
   static async run(): Promise<void> {
     let logger: ILogger | undefined;
+    let database: Database | undefined;
 
     try {
       // 1-3: Configuration pipeline
@@ -122,7 +104,7 @@ export class Bootstrap {
       // 4: Logger
       const loggerFactory = new LoggerFactory(config.logLevel);
       logger = loggerFactory.createLogger('Bootstrap');
-      logger.info('Bootstrap starting...');
+      logger.info('Bootstrap starting (Stage 2)...');
 
       // 5: Service container
       const container = new ServiceContainer();
@@ -143,8 +125,8 @@ export class Bootstrap {
       const shutdownHandler = new ShutdownHandler(kernel, config.shutdownTimeoutMs, shutdownLogger);
       shutdownHandler.install();
 
-      // 10: RuntimeContext
-      const context: RuntimeContext = {
+      // 10: Base RuntimeContext (stateManager added after construction)
+      const baseContext = {
         logger: loggerFactory.createLogger('App'),
         loggerFactory,
         config: configProvider,
@@ -153,17 +135,53 @@ export class Bootstrap {
         workspaceRoot: config.workspaceRoot,
       };
 
-      // 11-12: Runtime
-      const runtime = new Runtime(context);
+      // 11: Database + Migrations
+      const dbDir = path.join(config.workspaceRoot, '.ai', 'runtime');
+      const dbPath = path.join(dbDir, 'workspace.db');
+      const dbConfig: DatabaseConfig = {
+        path: config.nodeEnv === 'test' ? ':memory:' : dbPath,
+        walMode: true,
+        timeout: 5000,
+        verbose: config.nodeEnv === 'development',
+      };
+      database = new Database(dbConfig);
+      database.open();
+      logger.info('Database opened', { path: dbConfig.path });
+
+      const migrationRunner = new MigrationRunner();
+      migrationRunner.run(database);
+      logger.info('Migrations applied');
+
+      // 12: Repositories
+      const workspaceRepo = new WorkspaceRepository(database);
+      const sessionRepo = new SessionRepository(database);
+      const learningRepo = new LearningRepository(database);
+      const milestoneRepo = new MilestoneRepository(database);
+      const dependencyRepo = new DependencyRepository(database);
+      const settingsRepo = new SettingsRepository(database);
+
+      // 13: StateManager
+      const stateManager = new StateManager(
+        workspaceRepo, sessionRepo, learningRepo,
+        milestoneRepo, dependencyRepo, settingsRepo,
+      );
+      logger.info('StateManager initialised');
+
+      // 14: Full RuntimeContext
+      const context: RuntimeContext = { ...baseContext, stateManager };
+
+      // 15-16: Runtime
+      const runtime = new Runtime(context, database);
       lifecycle.register('Runtime', runtime);
 
-      // 13: Health monitor with built-in checks
+      // 17: Health monitor
       const healthMonitor = new HealthMonitor();
       healthMonitor.register(new ConfigHealthCheck(configProvider));
       healthMonitor.register(new LoggerHealthCheck(loggerFactory));
       healthMonitor.register(new RuntimeStateHealthCheck(() => kernel.state));
+      healthMonitor.register(new DatabaseHealthCheck(database));
 
-      // 14: Register all services in container
+      // 18: Register all services in container
       container.registerInstance(TOKENS.Config, configProvider);
       container.registerInstance(TOKENS.Logger, logger);
       container.registerInstance(TOKENS.LoggerFactory, loggerFactory);
@@ -172,8 +190,10 @@ export class Bootstrap {
       container.registerInstance(TOKENS.HealthMonitor, healthMonitor);
       container.registerInstance(TOKENS.Kernel, kernel);
       container.registerInstance(TOKENS.Runtime, runtime);
+      container.registerInstance(TOKENS.Database, database);
+      container.registerInstance(TOKENS.StateManager, stateManager);
 
-      // 15: Boot
+      // 19: Boot
       logger.info('All services wired, booting kernel...');
       await kernel.boot();
 
@@ -189,6 +209,10 @@ export class Bootstrap {
         logger.error(`Fatal bootstrap error: ${message}`);
       } else {
         process.stderr.write(`Fatal bootstrap error: ${message}\n`);
+      }
+      // Ensure database is closed on fatal error
+      if (database?.isOpen()) {
+        database.close();
       }
       process.exit(1);
     }

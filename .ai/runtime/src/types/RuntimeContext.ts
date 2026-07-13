@@ -2,6 +2,7 @@ import type { ILogger, ILoggerFactory } from '../interfaces/ILogger.js';
 import type { IConfigProvider } from '../interfaces/IConfigProvider.js';
 import type { IServiceContainer } from '../interfaces/IServiceContainer.js';
 import type { RuntimeState } from '../kernel/RuntimeState.js';
+import type { StateManager } from '../state/StateManager.js';
 
 /**
  * Core runtime context bundling essential dependencies.
@@ -29,4 +30,10 @@ export interface RuntimeContext {
 
   /** Absolute path to the workspace root. */
   readonly workspaceRoot: string;
+
+  /**
+   * The Stage 2 state manager — the sole gateway to persistence.
+   * Added in Stage 2; future stages extend this context further.
+   */
+  readonly stateManager: StateManager;
 }
