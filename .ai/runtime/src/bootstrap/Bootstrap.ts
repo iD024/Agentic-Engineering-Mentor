@@ -45,6 +45,14 @@ import { GraphBuilder } from '../graph/index.js';
 import { RepositoryCache } from '../repository-cache/index.js';
 import { RepositoryPlanner } from '../planner/index.js';
 import * as Queries from '../repository-queries/index.js';
+import { CommandBus } from '../core/cqrs/CommandBus.js';
+import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
+import { ToolRegistry } from '../tool-registry/ToolRegistry.js';
+import { SessionManager } from '../sessions/SessionManager.js';
+import { ExecutionTracer } from '../telemetry/ExecutionTracer.js';
+import { MetricsCollector } from '../telemetry/MetricsCollector.js';
+import { MCPServer } from '../mcp/MCPServer.js';
+import { GetRepositorySummaryTool } from '../tools/GetRepositorySummaryTool.js';
 /** Built-in health check: configuration status. */
 class ConfigHealthCheck implements IHealthCheck {
   readonly name = 'configuration';
@@ -238,6 +246,30 @@ export class Bootstrap {
       queryBus.register(new Queries.ListModulesQueryHandler(symbolTable));
       logger.info('Repository Intelligence Engine initialised');
 
+      // 17.8: CommandBus
+      const commandBus = new CommandBus();
+      logger.info('CommandBus initialised');
+
+      // 17.9: Gateway (Stage 6)
+      const sessionManager = new SessionManager();
+      const executionTracer = new ExecutionTracer();
+      const metricsCollector = new MetricsCollector();
+      const toolRegistry = new ToolRegistry();
+
+      const gateway = new RuntimeGateway({
+        logger: loggerFactory.createLogger('Gateway'),
+        workspaceRoot: config.workspaceRoot,
+        runtimeVersion: '2.0.0'
+      });
+      
+      const mcpServer = new MCPServer(gateway);
+
+      // Register tools
+      const getRepoSummaryTool = new GetRepositorySummaryTool(queryBus);
+      toolRegistry.register(getRepoSummaryTool);
+
+      logger.info('Runtime Gateway (Stage 6) initialised');
+
       // 18: Register all services in container
       container.registerInstance(TOKENS.Config, configProvider);
       container.registerInstance(TOKENS.Logger, logger);
@@ -251,6 +283,12 @@ export class Bootstrap {
       container.registerInstance(TOKENS.StateManager, stateManager);
       container.registerInstance(TOKENS.EventBus, eventBus);
       container.registerInstance(TOKENS.QueryBus, queryBus);
+      container.registerInstance(TOKENS.CommandBus, commandBus);
+      container.registerInstance(TOKENS.RuntimeGateway, gateway);
+      container.registerInstance(TOKENS.ToolRegistry, toolRegistry);
+      container.registerInstance(TOKENS.SessionManager, sessionManager);
+      container.registerInstance(TOKENS.ExecutionTracer, executionTracer);
+      container.registerInstance(TOKENS.MetricsCollector, metricsCollector);
 
       // 19: Boot
       logger.info('All services wired, booting kernel...');

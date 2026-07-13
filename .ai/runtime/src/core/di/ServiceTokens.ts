@@ -43,5 +43,12 @@ export const TOKENS = {
 
   // Stage 4 tokens (CQRS)
   QueryBus: createToken<import('../../core/cqrs/interfaces.js').IQueryBus>('QueryBus'),
-} as const;
+  CommandBus: createToken<import('../../core/cqrs/interfaces.js').ICommandBus>('CommandBus'),
 
+  // Stage 6 tokens (Gateway)
+  RuntimeGateway: createToken<import('../../gateway/RuntimeGateway.js').RuntimeGateway>('RuntimeGateway'),
+  ToolRegistry: createToken<import('../../tool-registry/ToolRegistry.js').ToolRegistry>('ToolRegistry'),
+  SessionManager: createToken<import('../../sessions/SessionManager.js').SessionManager>('SessionManager'),
+  ExecutionTracer: createToken<import('../../telemetry/ExecutionTracer.js').ExecutionTracer>('ExecutionTracer'),
+  MetricsCollector: createToken<import('../../telemetry/MetricsCollector.js').MetricsCollector>('MetricsCollector'),
+} as const;
