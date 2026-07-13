@@ -122,7 +122,7 @@ describe('Stage 2 Integration', () => {
 
   it('StateManager cache is consistent with database', () => {
     const { stateManager } = buildStack(db);
-    const ws = stateManager.createWorkspace({ id: 'ws-cache-test', name: 'Cache Test' });
+    const _ws = stateManager.createWorkspace({ id: 'ws-cache-test', name: 'Cache Test' });
     const fromCache = stateManager.loadWorkspace('ws-cache-test');
     expect(fromCache).toBe(stateManager.loadWorkspace('ws-cache-test')); // same reference
     expect(fromCache!.name).toBe('Cache Test');

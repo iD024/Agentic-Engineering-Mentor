@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { MockInstance } from 'vitest';
 import { ConsoleLogger } from '../../../src/core/logger/ConsoleLogger.js';
 import { LogLevel } from '../../../src/types/LogLevel.js';
 
 describe('ConsoleLogger', () => {
-  let stdoutSpy: ReturnType<typeof vi.spyOn>;
-  let stderrSpy: ReturnType<typeof vi.spyOn>;
+  let stdoutSpy: MockInstance;
+  let stderrSpy: MockInstance;
 
   beforeEach(() => {
     stdoutSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true);

@@ -38,7 +38,7 @@ export class Database {
     }
 
     const verboseLogger = this.config.verbose
-      ? (msg: string) => process.stdout.write(`[SQL] ${msg}\n`)
+      ? (msg: unknown) => process.stdout.write(`[SQL] ${String(msg)}\n`)
       : undefined;
 
     this._connection = new BetterSqlite3(this.config.path, {
