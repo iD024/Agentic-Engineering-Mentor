@@ -66,13 +66,14 @@ import * as Queries from '../repository-queries/index.js';
 import * as Knowledge from '../knowledge/index.js';
 import { CommandBus } from '../core/cqrs/CommandBus.js';
 import * as Agents from '../agents/index.js';
+import { GetWorkspaceQueryHandler, CompleteMilestoneCommandHandler } from '../core/cqrs/index.js';
 import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
-import { ToolRegistry } from '../tool-registry/ToolRegistry.js';
+import { ToolRegistry, ToolLoader } from '../tool-registry/index.js';
 import { SessionManager } from '../sessions/SessionManager.js';
 import { ExecutionTracer } from '../telemetry/ExecutionTracer.js';
 import { MetricsCollector } from '../telemetry/MetricsCollector.js';
 import { MCPServer } from '../mcp/MCPServer.js';
-import { GetRepositorySummaryTool } from '../tools/GetRepositorySummaryTool.js';
+// Tools are now loaded dynamically
 /** Built-in health check: configuration status. */
 class ConfigHealthCheck implements IHealthCheck {
   readonly name = 'configuration';
@@ -268,6 +269,7 @@ export class Bootstrap {
       queryBus.register(new Queries.ImpactAnalysisQueryHandler(repoPlanner.impact));
       queryBus.register(new Queries.FindSymbolQueryHandler(symbolTable));
       queryBus.register(new Queries.ListModulesQueryHandler(symbolTable));
+      queryBus.register(new GetWorkspaceQueryHandler(stateManager));
       logger.info('Repository Intelligence Engine initialised');
 
       // 17.8: Engineering Knowledge Platform (Stage 7)
@@ -292,6 +294,7 @@ export class Bootstrap {
 
       // 17.9: CommandBus
       const commandBus = new CommandBus();
+      commandBus.register(new CompleteMilestoneCommandHandler(stateManager, eventBus));
       logger.info('CommandBus initialised');
 
       // 17.9: Gateway (Stage 6)
@@ -309,9 +312,9 @@ export class Bootstrap {
       
       const mcpServer = new MCPServer(gateway);
 
-      // Register tools
-      const getRepoSummaryTool = new GetRepositorySummaryTool(queryBus);
-      toolRegistry.register(getRepoSummaryTool);
+      // Load tools automatically
+      const toolLoader = new ToolLoader(container, toolRegistry);
+      await toolLoader.discoverAndLoad();
 
       logger.info('Runtime Gateway (Stage 6) initialised');
 
