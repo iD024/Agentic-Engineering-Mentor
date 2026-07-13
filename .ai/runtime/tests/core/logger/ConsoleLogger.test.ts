@@ -12,12 +12,12 @@ describe('ConsoleLogger', () => {
     stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   });
 
-  it('writes info messages to stdout', () => {
+  it('writes info messages to stderr', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG);
     logger.info('test message');
-    expect(stdoutSpy).toHaveBeenCalledOnce();
-    expect(stdoutSpy.mock.calls[0]![0]).toContain('[INFO]');
-    expect(stdoutSpy.mock.calls[0]![0]).toContain('test message');
+    expect(stderrSpy).toHaveBeenCalledOnce();
+    expect(stderrSpy.mock.calls[0]![0]).toContain('[INFO]');
+    expect(stderrSpy.mock.calls[0]![0]).toContain('test message');
   });
 
   it('writes error messages to stderr', () => {
@@ -34,28 +34,27 @@ describe('ConsoleLogger', () => {
     logger.info('should not appear');
     logger.warn('should appear');
     logger.error('should appear');
-    expect(stdoutSpy).toHaveBeenCalledOnce(); // only warn
-    expect(stderrSpy).toHaveBeenCalledOnce(); // only error
+    expect(stderrSpy).toHaveBeenCalledTimes(2); // warn and error
   });
 
   it('includes prefix in formatted output', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG, 'TestPrefix');
     logger.info('hello');
-    const output = stdoutSpy.mock.calls[0]![0] as string;
+    const output = stderrSpy.mock.calls[0]![0] as string;
     expect(output).toContain('[TestPrefix]');
   });
 
   it('omits prefix segment when no prefix is provided', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG);
     logger.info('hello');
-    const output = stdoutSpy.mock.calls[0]![0] as string;
+    const output = stderrSpy.mock.calls[0]![0] as string;
     expect(output).not.toContain('[]');
   });
 
   it('includes ISO timestamp in output', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG);
     logger.info('timestamp test');
-    const output = stdoutSpy.mock.calls[0]![0] as string;
+    const output = stderrSpy.mock.calls[0]![0] as string;
     // ISO timestamp pattern: YYYY-MM-DDTHH:mm:ss.sssZ
     expect(output).toMatch(/\[\d{4}-\d{2}-\d{2}T/);
   });
@@ -63,14 +62,14 @@ describe('ConsoleLogger', () => {
   it('includes structured context as JSON', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG);
     logger.info('with context', { key: 'value', count: 42 });
-    const output = stdoutSpy.mock.calls[0]![0] as string;
+    const output = stderrSpy.mock.calls[0]![0] as string;
     expect(output).toContain('{"key":"value","count":42}');
   });
 
   it('omits context segment when context is empty', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG);
     logger.info('no context', {});
-    const output = stdoutSpy.mock.calls[0]![0] as string;
+    const output = stderrSpy.mock.calls[0]![0] as string;
     expect(output).not.toContain('{}');
   });
 
@@ -80,14 +79,13 @@ describe('ConsoleLogger', () => {
     logger.info('i');
     logger.warn('w');
     logger.error('e');
-    expect(stdoutSpy).toHaveBeenCalledTimes(3); // debug, info, warn
-    expect(stderrSpy).toHaveBeenCalledOnce(); // error
+    expect(stderrSpy).toHaveBeenCalledTimes(4); // debug, info, warn, error
   });
 
   it('produces newline-terminated output', () => {
     const logger = new ConsoleLogger(LogLevel.DEBUG);
     logger.info('newline test');
-    const output = stdoutSpy.mock.calls[0]![0] as string;
+    const output = stderrSpy.mock.calls[0]![0] as string;
     expect(output).toMatch(/\n$/);
   });
 });

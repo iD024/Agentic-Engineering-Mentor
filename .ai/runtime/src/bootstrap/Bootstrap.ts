@@ -297,6 +297,21 @@ export class Bootstrap {
       commandBus.register(new CompleteMilestoneCommandHandler(stateManager, eventBus));
       logger.info('CommandBus initialised');
 
+      // 18: Register all services in container
+      container.registerInstance(TOKENS.Config, configProvider);
+      container.registerInstance(TOKENS.Logger, logger);
+      container.registerInstance(TOKENS.LoggerFactory, loggerFactory);
+      container.registerInstance(TOKENS.Lifecycle, lifecycle);
+      container.registerInstance(TOKENS.Container, container);
+      container.registerInstance(TOKENS.HealthMonitor, healthMonitor);
+      container.registerInstance(TOKENS.Kernel, kernel);
+      container.registerInstance(TOKENS.Runtime, runtime);
+      container.registerInstance(TOKENS.Database, database);
+      container.registerInstance(TOKENS.StateManager, stateManager);
+      container.registerInstance(TOKENS.EventBus, eventBus);
+      container.registerInstance(TOKENS.QueryBus, queryBus);
+      container.registerInstance(TOKENS.CommandBus, commandBus);
+      
       // 17.9: Gateway (Stage 6)
       const sessionManager = new SessionManager();
       const executionTracer = new ExecutionTracer();
@@ -316,6 +331,12 @@ export class Bootstrap {
       const toolLoader = new ToolLoader(container, toolRegistry);
       await toolLoader.discoverAndLoad();
 
+      container.registerInstance(TOKENS.RuntimeGateway, gateway);
+      container.registerInstance(TOKENS.ToolRegistry, toolRegistry);
+      container.registerInstance(TOKENS.SessionManager, sessionManager);
+      container.registerInstance(TOKENS.ExecutionTracer, executionTracer);
+      container.registerInstance(TOKENS.MetricsCollector, metricsCollector);
+
       logger.info('Runtime Gateway (Stage 6) initialised');
 
       // 17.10: Pedagogical Agent Platform (Stage 8)
@@ -334,6 +355,9 @@ export class Bootstrap {
         new Agents.ImplementationCoach(),
         new Agents.CodeDependencyValidator()
       ]);
+
+      container.registerInstance(TOKENS.AgentRegistry, agentRegistry);
+      container.registerInstance(TOKENS.AgentRuntime, agentRuntime);
 
       logger.info('Pedagogical Agent Platform (Stage 8) initialised');
 
@@ -362,28 +386,6 @@ export class Bootstrap {
       queryBus.register(new ValidateSubmissionHandler(validationRuntime));
 
       logger.info('Engineering Validation Platform (Stage 9) initialised');
-
-      // 18: Register all services in container
-      container.registerInstance(TOKENS.Config, configProvider);
-      container.registerInstance(TOKENS.Logger, logger);
-      container.registerInstance(TOKENS.LoggerFactory, loggerFactory);
-      container.registerInstance(TOKENS.Lifecycle, lifecycle);
-      container.registerInstance(TOKENS.Container, container);
-      container.registerInstance(TOKENS.HealthMonitor, healthMonitor);
-      container.registerInstance(TOKENS.Kernel, kernel);
-      container.registerInstance(TOKENS.Runtime, runtime);
-      container.registerInstance(TOKENS.Database, database);
-      container.registerInstance(TOKENS.StateManager, stateManager);
-      container.registerInstance(TOKENS.EventBus, eventBus);
-      container.registerInstance(TOKENS.QueryBus, queryBus);
-      container.registerInstance(TOKENS.CommandBus, commandBus);
-      container.registerInstance(TOKENS.RuntimeGateway, gateway);
-      container.registerInstance(TOKENS.ToolRegistry, toolRegistry);
-      container.registerInstance(TOKENS.SessionManager, sessionManager);
-      container.registerInstance(TOKENS.ExecutionTracer, executionTracer);
-      container.registerInstance(TOKENS.MetricsCollector, metricsCollector);
-      container.registerInstance(TOKENS.AgentRegistry, agentRegistry);
-      container.registerInstance(TOKENS.AgentRuntime, agentRuntime);
 
       // 19: Boot
       logger.info('All services wired, booting kernel...');

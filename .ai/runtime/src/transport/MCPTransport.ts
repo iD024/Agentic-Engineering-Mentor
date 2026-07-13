@@ -9,6 +9,7 @@ export class MCPTransport extends Transport {
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', this.onData.bind(this));
     process.stdin.on('error', this.onError.bind(this));
+    process.stdin.resume(); // Keep event loop alive
     // In actual implementation, we would parse JSON-RPC messages from stdin buffers
   }
 

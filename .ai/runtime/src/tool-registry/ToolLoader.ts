@@ -18,20 +18,35 @@ export class ToolLoader {
   }
 
   async discoverAndLoad(): Promise<void> {
-    this.logger.info('Starting automatic tool discovery and registration');
+    this.logger.info('Starting automatic tool discovery and registration'); console.log('Hello from ToolLoader');
     
-    // Load built-in tools
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const isDist = __dirname.includes('/dist/') || __dirname.includes('\\dist\\');
+    // If in dist/src/tool-registry, go up to dist/src
+    // If in src/tool-registry, go up to src
+    const srcOrDistPath = path.resolve(__dirname, '..');
+    const projectRoot = path.resolve(srcOrDistPath, '../..'); // up from src or dist to .ai/runtime
+    
+    // Built-in tools
+    const builtInManifestPath = isDist 
+      ? path.join(projectRoot, 'src', 'tools', 'tools.json') // read from src since tsc might not copy it
+      : path.join(srcOrDistPath, 'tools', 'tools.json');
+    
     await this.loadManifest(
-      path.join(process.cwd(), '.ai', 'runtime', 'dist', 'tools', 'tools.json'),
+      builtInManifestPath,
       'builtInTools',
-      path.join(process.cwd(), '.ai', 'runtime', 'dist', 'tools')
+      path.join(srcOrDistPath, 'tools')
     );
 
-    // Load plugin tools
+    // Plugin tools
+    const pluginManifestPath = isDist
+      ? path.join(projectRoot, 'src', 'plugin', 'plugins.json')
+      : path.join(srcOrDistPath, 'plugin', 'plugins.json');
+
     await this.loadManifest(
-      path.join(process.cwd(), '.ai', 'runtime', 'dist', 'plugin', 'plugins.json'),
+      pluginManifestPath,
       'pluginTools',
-      path.join(process.cwd(), '.ai', 'runtime', 'dist', 'plugin')
+      path.join(srcOrDistPath, 'plugin')
     );
 
     this.logger.info(`Loaded ${this.registry.getAll().length} tools in total`);
