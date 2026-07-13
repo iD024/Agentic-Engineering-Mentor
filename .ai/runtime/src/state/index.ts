@@ -6,3 +6,4 @@ export type { StateVersion as IStateVersion } from './StateVersion.js';
 export { StateCache } from './StateCache.js';
 export { StateSnapshot } from './StateSnapshot.js';
 export type { SnapshotJSON } from './StateSnapshot.js';
+export { StateManager } from './StateManager.js';
