@@ -3,8 +3,7 @@ import type { ToolResult } from '../tool-registry/ToolModels.js';
 import type { ExecutionContext } from '../core/execution/ExecutionContext.js';
 import { ToolExecutionError } from '../errors/GatewayErrors.js';
 // Context Engine
-import { ContextBuilder } from '../context/ContextBuilder.js';
-import { ContextOptimizer } from '../context/ContextOptimizer.js';
+import { ContextBuilder, ContextOptimizer } from '../context/index.js';
 // Telemetry
 import { ExecutionTracer, MetricsCollector } from '../telemetry/index.js';
 
