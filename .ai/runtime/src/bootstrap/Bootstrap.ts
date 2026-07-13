@@ -45,6 +45,7 @@ import { GraphBuilder } from '../graph/index.js';
 import { RepositoryCache } from '../repository-cache/index.js';
 import { RepositoryPlanner } from '../planner/index.js';
 import * as Queries from '../repository-queries/index.js';
+import * as Knowledge from '../knowledge/index.js';
 import { CommandBus } from '../core/cqrs/CommandBus.js';
 import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
 import { ToolRegistry } from '../tool-registry/ToolRegistry.js';
@@ -246,7 +247,27 @@ export class Bootstrap {
       queryBus.register(new Queries.ListModulesQueryHandler(symbolTable));
       logger.info('Repository Intelligence Engine initialised');
 
-      // 17.8: CommandBus
+      // 17.8: Engineering Knowledge Platform (Stage 7)
+      const documentImporter = new Knowledge.DocumentImporter();
+      const chunker = new Knowledge.Chunker();
+      const embeddingProvider = new Knowledge.DeterministicEmbeddingProvider(384);
+      const knowledgeGraph = new Knowledge.KnowledgeGraph();
+      const knowledgeIndexer = new Knowledge.KnowledgeIndexer(embeddingProvider, knowledgeGraph);
+      const knowledgeRetriever = new Knowledge.KnowledgeRetriever(knowledgeIndexer, embeddingProvider);
+      const knowledgeRanker = new Knowledge.KnowledgeRanker();
+      const citationEngine = new Knowledge.CitationEngine();
+      const knowledgeCache = new Knowledge.KnowledgeCache();
+      const knowledgeRepository = new Knowledge.KnowledgeRepository();
+
+      queryBus.register(new Knowledge.SearchKnowledgeHandler(knowledgeRetriever, knowledgeRanker));
+      queryBus.register(new Knowledge.FindTopicHandler(knowledgeGraph));
+      queryBus.register(new Knowledge.FindCitationHandler(citationEngine));
+      queryBus.register(new Knowledge.SummarizeKnowledgeHandler(knowledgeRetriever));
+      queryBus.register(new Knowledge.RelatedTopicsHandler(knowledgeGraph));
+      queryBus.register(new Knowledge.DocumentSummaryHandler(knowledgeIndexer));
+      logger.info('Engineering Knowledge Platform (Stage 7) initialised');
+
+      // 17.9: CommandBus
       const commandBus = new CommandBus();
       logger.info('CommandBus initialised');
 
