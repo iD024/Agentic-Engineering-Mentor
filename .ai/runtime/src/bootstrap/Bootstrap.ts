@@ -27,6 +27,24 @@ import { LearningRepository } from '../repositories/LearningRepository.js';
 import { MilestoneRepository } from '../repositories/MilestoneRepository.js';
 import { DependencyRepository } from '../repositories/DependencyRepository.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
+// Validation Platform
+import {
+  ValidationRegistry,
+  ValidationRuntime,
+  RubricEngine,
+  GradingEngine,
+  ReportGenerator,
+  CodeCompilerValidator,
+  CodeStaticAnalysisValidator,
+  RepositoryStructureValidator,
+  MilestoneValidator,
+  CourseProgressValidator,
+  ChangeValidator,
+  DocumentValidator,
+  ArchitectureValidator,
+  DependencyRuleValidator,
+  ValidateSubmissionHandler,
+} from '../validation/index.js';
 import { StateManager } from '../state/StateManager.js';
 import { EventBus } from '../events/bus/EventBus.js';
 import { ValidationMiddleware } from '../events/middleware/ValidationMiddleware.js';
@@ -310,6 +328,32 @@ export class Bootstrap {
       ]);
 
       logger.info('Pedagogical Agent Platform (Stage 8) initialised');
+
+      // 17.11: Engineering Validation Platform (Stage 9)
+      const validationRegistry = new ValidationRegistry();
+      // Register all validators
+      validationRegistry.register(new CodeCompilerValidator());
+      validationRegistry.register(new CodeStaticAnalysisValidator());
+      validationRegistry.register(new RepositoryStructureValidator([]));
+      validationRegistry.register(new MilestoneValidator([]));
+      validationRegistry.register(new CourseProgressValidator(0));
+      validationRegistry.register(new ChangeValidator([]));
+      validationRegistry.register(new DocumentValidator([]));
+      validationRegistry.register(new ArchitectureValidator([]));
+      validationRegistry.register(new DependencyRuleValidator());
+      
+      const rubricEngine = new RubricEngine();
+      const gradingEngine = new GradingEngine(rubricEngine);
+      const reportGenerator = new ReportGenerator();
+      
+      const validationRuntime = new ValidationRuntime(validationRegistry, gradingEngine, reportGenerator);
+      container.registerInstance(TOKENS.ValidationRegistry, validationRegistry);
+      container.registerInstance(TOKENS.ValidationRuntime, validationRuntime);
+      
+      // Register CQRS handlers
+      queryBus.register(new ValidateSubmissionHandler(validationRuntime));
+
+      logger.info('Engineering Validation Platform (Stage 9) initialised');
 
       // 18: Register all services in container
       container.registerInstance(TOKENS.Config, configProvider);

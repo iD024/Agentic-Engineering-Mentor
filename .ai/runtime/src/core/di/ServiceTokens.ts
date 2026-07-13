@@ -55,4 +55,8 @@ export const TOKENS = {
   // Stage 8 tokens (Agent Platform)
   AgentRegistry: createToken<import('../../agents/agent-registry/AgentRegistry.js').AgentRegistry>('AgentRegistry'),
   AgentRuntime: createToken<import('../../agents/agent-runtime/AgentRuntime.js').AgentRuntime>('AgentRuntime'),
+
+  // Stage 9 tokens (Validation Platform)
+  ValidationRegistry: createToken<import('../../validation/ValidationRegistry.js').ValidationRegistry>('ValidationRegistry'),
+  ValidationRuntime: createToken<import('../../validation/ValidationRuntime.js').ValidationRuntime>('ValidationRuntime'),
 } as const;
