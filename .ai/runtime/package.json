@@ -17,9 +17,13 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "dependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/pdf-parse": "^1.1.5",
     "better-sqlite3": "^12.11.1",
+    "cheerio": "^1.2.0",
     "chokidar": "^5.0.0",
     "dotenv": "^16.4.7",
+    "pdf-parse": "^2.4.5",
     "web-tree-sitter": "^0.26.11",
     "zod": "^3.24.4"
   },
