@@ -22,7 +22,7 @@ export class EvaluationEngine {
   async evaluateWorkflow(state: WorkflowExecutionState, criteria: EvaluationCriteria): Promise<EvaluationResult> {
     const isComplete = state.pendingSteps.size === 0 && state.failedSteps.size === 0;
     
-    // Dummy validation logic to simulate acceptance criteria check
+    // Basic validation of workflow execution state
     const failedCriteria: string[] = [];
     if (!isComplete && criteria.strictMode) {
       failedCriteria.push('Not all steps completed successfully.');

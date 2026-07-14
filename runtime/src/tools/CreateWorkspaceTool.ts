@@ -40,7 +40,7 @@ export class CreateWorkspaceTool implements Tool<any, unknown> {
     });
     
     try {
-      const result = await this.commandBus.execute(command) as { success: boolean, message: string };
+      const result = await this.commandBus.execute(command) as any;
       return {
         success: result.success,
         data: result

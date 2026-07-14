@@ -33,7 +33,7 @@ export class WorkspaceSummaryTool implements Tool<any, unknown> {
   ) {}
 
   async execute(params: any, context: ToolContext): Promise<ToolResult<unknown>> {
-    const query = new GetWorkspaceSummaryQuery(params.workspaceId);
+    const query = new GetWorkspaceSummaryQuery(params.workspaceId, context.workspaceRoot);
     
     try {
       const result = await this.queryBus.execute(query);

@@ -3,8 +3,7 @@ import { SemanticVersion, type ToolDescriptor, type ToolResult } from '../tool-r
 import type { ICommandBus } from '../core/cqrs/interfaces.js';
 import type { IServiceContainer } from '../interfaces/IServiceContainer.js';
 import { TOKENS } from '../core/di/ServiceTokens.js';
-import path from 'node:path';
-import fs from 'node:fs/promises';
+import { ImportRepositoryCommand } from '../core/cqrs/index.js';
 
 export function createTool(container: IServiceContainer): Tool {
   return new ImportRepositoryTool(container.resolve(TOKENS.CommandBus));
@@ -30,42 +29,17 @@ export class ImportRepositoryTool implements Tool<any, unknown> {
   constructor(private readonly commandBus: ICommandBus) {}
 
   async execute(params: any, context: ToolContext): Promise<ToolResult<unknown>> {
+    const command = new ImportRepositoryCommand({
+      name: params.name,
+      repositoryUrl: params.repositoryUrl,
+      workspaceRoot: context.workspaceRoot
+    });
+    
     try {
-      const destDir = path.join(context.workspaceRoot, '.ai', 'repositories', params.name);
-      
-      // 1. Simulate Clone/Copy
-      await fs.mkdir(destDir, { recursive: true });
-      await fs.writeFile(path.join(destDir, 'metadata.json'), JSON.stringify({
-        url: params.repositoryUrl,
-        importedAt: new Date().toISOString()
-      }));
-
-      // 2. Index / Verify
-      const stat = await fs.stat(destDir);
-      if (!stat.isDirectory()) {
-         return { success: false, data: { message: 'Verification failed: Repository directory not created.' } };
-      }
-
-      // 3. Update JSON
-      const workspaceJsonPath = path.join(context.workspaceRoot, '.ai', 'workspace.json');
-      let workspaceJson = { repositories: [] as any[] };
-      try {
-        const raw = await fs.readFile(workspaceJsonPath, 'utf-8');
-        workspaceJson = JSON.parse(raw);
-        if (!workspaceJson.repositories) workspaceJson.repositories = [];
-      } catch {}
-      
-      workspaceJson.repositories.push({
-        name: params.name,
-        url: params.repositoryUrl,
-        path: destDir,
-        importedAt: new Date().toISOString()
-      });
-      await fs.writeFile(workspaceJsonPath, JSON.stringify(workspaceJson, null, 2));
-
+      const result = await this.commandBus.execute(command) as any;
       return {
-        success: true,
-        data: { message: `Successfully imported repository: ${params.name}`, path: destDir }
+        success: result.success,
+        data: result
       };
     } catch (error) {
       const errMessage = error instanceof Error ? error.message : String(error);

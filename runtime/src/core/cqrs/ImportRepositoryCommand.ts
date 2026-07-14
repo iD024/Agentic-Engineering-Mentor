@@ -1,24 +1,23 @@
 import { ICommand } from './interfaces.js';
 
-export interface CreateWorkspaceResult {
+export interface ImportRepositoryResult {
   success: boolean;
   message: string;
   details: {
-    createdFolders: string[];
-    updatedFiles: string[];
+    clonedTo: string;
+    filesIndexed: number;
     dbChanges: string[];
-    warnings: string[];
     errors: string[];
   };
 }
 
-export class CreateWorkspaceCommand implements ICommand {
-  readonly type = 'CreateWorkspaceCommand';
+export class ImportRepositoryCommand implements ICommand {
+  readonly type = 'ImportRepositoryCommand';
   
   constructor(
     public readonly payload: {
       name: string;
-      description?: string;
+      repositoryUrl: string;
       workspaceRoot: string;
     }
   ) {}

@@ -6,3 +6,7 @@ export * from './GetWorkspaceSummaryQuery.js';
 export * from './CompleteMilestoneCommand.js';
 export * from './CreateWorkspaceCommand.js';
 export * from './CreateWorkspaceCommandHandler.js';
+export * from './ImportRepositoryCommand.js';
+export * from './ImportRepositoryCommandHandler.js';
+export * from './ImportKnowledgeCommand.js';
+export * from './ImportKnowledgeCommandHandler.js';

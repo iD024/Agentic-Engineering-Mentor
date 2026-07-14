@@ -66,7 +66,7 @@ import * as Queries from '../repository-queries/index.js';
 import * as Knowledge from '../knowledge/index.js';
 import { CommandBus } from '../core/cqrs/CommandBus.js';
 import * as Agents from '../agents/index.js';
-import { GetWorkspaceQueryHandler, CompleteMilestoneCommandHandler, CreateWorkspaceCommandHandler, GetWorkspaceSummaryQueryHandler } from '../core/cqrs/index.js';
+import { GetWorkspaceQueryHandler, CompleteMilestoneCommandHandler, CreateWorkspaceCommandHandler, GetWorkspaceSummaryQueryHandler, ImportRepositoryCommandHandler, ImportKnowledgeCommandHandler } from '../core/cqrs/index.js';
 import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
 import { ToolRegistry, ToolLoader } from '../tool-registry/index.js';
 import { SessionManager } from '../sessions/SessionManager.js';
@@ -181,7 +181,7 @@ export class Bootstrap {
       };
 
       // 11: Database + Migrations
-      const dbDir = path.join(config.workspaceRoot, 'runtime', 'data');
+      const dbDir = path.join(config.workspaceRoot, '.ai', 'data');
       const dbPath = path.join(dbDir, 'workspace.db');
       
       const fs = await import('node:fs');
@@ -297,6 +297,8 @@ export class Bootstrap {
       const commandBus = new CommandBus();
       commandBus.register(new CompleteMilestoneCommandHandler(stateManager, eventBus));
       commandBus.register(new CreateWorkspaceCommandHandler(stateManager));
+      commandBus.register(new ImportRepositoryCommandHandler());
+      commandBus.register(new ImportKnowledgeCommandHandler());
       logger.info('CommandBus initialised');
 
       // 18: Register all services in container

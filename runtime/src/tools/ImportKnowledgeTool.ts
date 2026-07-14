@@ -1,10 +1,9 @@
 import type { Tool, ToolContext } from '../tool-registry/Tool.js';
 import { SemanticVersion, type ToolDescriptor, type ToolResult } from '../tool-registry/ToolModels.js';
-import type { IQueryBus, ICommandBus } from '../core/cqrs/interfaces.js';
+import type { ICommandBus } from '../core/cqrs/interfaces.js';
 import type { IServiceContainer } from '../interfaces/IServiceContainer.js';
 import { TOKENS } from '../core/di/ServiceTokens.js';
-import path from 'node:path';
-import fs from 'node:fs/promises';
+import { ImportKnowledgeCommand } from '../core/cqrs/index.js';
 
 export function createTool(container: IServiceContainer): Tool {
   return new ImportKnowledgeTool(container.resolve(TOKENS.CommandBus));
@@ -30,41 +29,17 @@ export class ImportKnowledgeTool implements Tool<any, unknown> {
   constructor(private readonly commandBus: ICommandBus) {}
 
   async execute(params: any, context: ToolContext): Promise<ToolResult<unknown>> {
+    const command = new ImportKnowledgeCommand({
+      filePath: params.filePath,
+      type: params.type,
+      workspaceRoot: context.workspaceRoot
+    });
+    
     try {
-      const sourceFile = params.filePath;
-      const fileName = path.basename(sourceFile);
-      const destDir = path.join(context.workspaceRoot, '.ai', 'knowledge', params.type.toLowerCase() + 's');
-      const destFile = path.join(destDir, fileName);
-      
-      // 1. Copy
-      await fs.mkdir(destDir, { recursive: true });
-      await fs.copyFile(sourceFile, destFile);
-
-      // 2. Index / Verify
-      const stat = await fs.stat(destFile);
-      if (!stat.isFile()) {
-         return { success: false, data: { message: 'Verification failed: File not found in workspace.' } };
-      }
-
-      // 3. Update JSON
-      const workspaceJsonPath = path.join(context.workspaceRoot, '.ai', 'workspace.json');
-      let workspaceJson = { knowledge: [] as any[] };
-      try {
-        const raw = await fs.readFile(workspaceJsonPath, 'utf-8');
-        workspaceJson = JSON.parse(raw);
-        if (!workspaceJson.knowledge) workspaceJson.knowledge = [];
-      } catch {}
-      
-      workspaceJson.knowledge.push({
-        file: destFile,
-        type: params.type,
-        importedAt: new Date().toISOString()
-      });
-      await fs.writeFile(workspaceJsonPath, JSON.stringify(workspaceJson, null, 2));
-
+      const result = await this.commandBus.execute(command) as any;
       return {
-        success: true,
-        data: { message: `Successfully imported ${params.type}: ${fileName}`, path: destFile }
+        success: result.success,
+        data: result
       };
     } catch (error) {
       const errMessage = error instanceof Error ? error.message : String(error);

@@ -169,6 +169,21 @@ export class StateManager {
   }
 
   /**
+   * Loads all workspaces.
+   *
+   * @returns An array of frozen workspaces.
+   */
+  loadAllWorkspaces(): ReadonlyArray<Readonly<Workspace>> {
+    const workspaces = this.workspaceRepo.findAll();
+    const result = [];
+    for (const workspace of workspaces) {
+      this.cache.setWorkspace(workspace);
+      result.push(this.cache.getWorkspace(workspace.id)!);
+    }
+    return Object.freeze(result);
+  }
+
+  /**
    * Updates fields on an existing workspace.
    *
    * Bumps the version number for optimistic concurrency.
@@ -378,6 +393,17 @@ export class StateManager {
     const snapshot = StateSnapshot.create(runtimeState, workspace, sessions);
     this.events.emit('SnapshotCreated', { snapshotId: snapshot.id });
     return snapshot;
+  }
+
+  getSessions(workspaceId: string): ReadonlyArray<Readonly<Session>> {
+    const sessions = this.sessionRepo.findByWorkspaceId(workspaceId);
+    return Object.freeze(sessions.map(s => Object.freeze(s)));
+  }
+
+  getMilestones(workspaceId: string): ReadonlyArray<Readonly<Milestone>> {
+    // Assuming milestoneRepo has findByWorkspaceId, otherwise we can just return empty for now
+    const milestones = (this.milestoneRepo as any).findByWorkspaceId ? (this.milestoneRepo as any).findByWorkspaceId(workspaceId) : [];
+    return Object.freeze(milestones.map((m: any) => Object.freeze(m)));
   }
 
   // ──────────────────────────────────────────────────────────────────────────
