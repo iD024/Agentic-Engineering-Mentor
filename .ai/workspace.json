@@ -1,6 +1,7 @@
 {
   "schemaVersion": "1.0",
-  "workspaceVersion": "1.0.0",
+  "workspaceVersion": "0.1.0",
+  "exportedAt": "2026-07-14T20:41:38.709Z",
   "project": {
     "name": "",
     "description": "",
@@ -13,36 +14,13 @@
     "lastSynchronization": "",
     "repositoryFingerprint": ""
   },
-  "initialization": {
-    "projectUnderstanding": "missing",
-    "repositoryKnowledge": "missing",
-    "curriculum": "missing",
-    "projectMemory": "missing",
-    "learningProgress": "missing",
-    "workspaceStatus": "missing",
-    "milestones": "missing",
-    "session": "missing",
-    "mistakeLogger": "missing"
-  },
-  "profiles": {
-    "installed": [],
-    "active": []
-  },
-  "skills": {
-    "enabled": []
-  },
-  "contextVersions": {
-    "projectContext": "1.0",
-    "projectUnderstanding": "1.0",
-    "repositoryKnowledge": "1.0",
-    "projectMemory": "1.0",
-    "curriculum": "1.0",
-    "learningProgress": "1.0",
-    "workspaceStatus": "1.0",
-    "session": "1.0"
-  },
   "featureFlags": {
     "strictMode": true,
     "experimentalSkills": false
+  },
+  "_meta": {
+    "source": "sqlite",
+    "runtimeVersion": "2.0.0",
+    "stage": 2
   }
 }
