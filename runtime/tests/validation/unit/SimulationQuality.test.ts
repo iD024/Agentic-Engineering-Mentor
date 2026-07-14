@@ -31,14 +31,14 @@ describe('QualityAnalyzer', () => {
 
   it('analyses the current runtime src directory', () => {
     const qa = new QualityAnalyzer();
-    const metrics = qa.analyse('/home/laksh/Projects/Antigravity-Engineering-Mentor/.ai/runtime/src');
+    const metrics = qa.analyse(process.cwd() + '/src');
     expect(metrics.totalLines).toBeGreaterThan(100);
     expect(metrics.codeLines).toBeGreaterThan(0);
   });
 
   it('detects large files if any exist', () => {
     const qa = new QualityAnalyzer();
-    const metrics = qa.analyse('/home/laksh/Projects/Antigravity-Engineering-Mentor/.ai/runtime/src');
+    const metrics = qa.analyse(process.cwd() + '/src');
     // largeFiles is an array (may or may not be populated)
     expect(Array.isArray(metrics.largeFiles)).toBe(true);
   });

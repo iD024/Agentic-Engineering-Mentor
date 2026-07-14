@@ -43,7 +43,7 @@ export class CodeDependencyValidator implements IAgent {
     };
 
     // Default target & rubric for fallback
-    const target = payload.target ?? { kind: ValidationTargetKind.Code, path: process.cwd() };
+    const target = payload.target ?? { kind: ValidationTargetKind.Code, path: this.context.workspaceRoot };
     const rubric = payload.rubric ?? { id: 'default', name: 'Default', version: '1', passingThreshold: 100, criteria: [] };
 
     const query = new ValidateSubmissionQuery(taskId, target, rubric, payload.overrideRuleIds);

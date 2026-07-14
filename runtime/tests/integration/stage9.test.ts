@@ -10,7 +10,10 @@ import { ReportGenerator } from '../../src/validation/reports/ReportGenerator.js
 import { CodeCompilerValidator, CodeStaticAnalysisValidator } from '../../src/validation/validators/index.js';
 import type { Rubric } from '../../src/validation/rubrics/types.js';
 
-const TEST_DIR = join(process.cwd(), '.test-workspace-stage9');
+import { fileURLToPath } from 'node:url';
+
+const __dirname = import.meta.dirname || fileURLToPath(new URL('.', import.meta.url));
+const TEST_DIR = join(__dirname, '.test-workspace-stage9');
 
 describe('Stage 9: Engineering Validation Platform Integration', () => {
   let runtime: ValidationRuntime;

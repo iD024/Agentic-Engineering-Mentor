@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import path from 'node:path';
 
 /**
  * Zod schema for validating environment variables.
@@ -21,7 +22,11 @@ export const configSchema = z.object({
   WORKSPACE_ROOT: z
     .string()
     .min(1)
-    .default('.')
+    .default(() => {
+      // If we are running inside the runtime directory, the workspace root is the parent directory
+      const cwd = process.cwd();
+      return cwd.endsWith('runtime') ? path.resolve(cwd, '..') : cwd;
+    })
     .describe('Root directory for the workspace'),
 
   SHUTDOWN_TIMEOUT_MS: z.coerce

@@ -15,13 +15,13 @@ import { ValidationTargetKind } from '../../../src/validation/types.js';
 describe('RepositoryStructureValidator', () => {
   it('passes when required path exists', async () => {
     const v = new RepositoryStructureValidator(['src']);
-    const results = await v.validate({ kind: ValidationTargetKind.Repository, path: '/home/laksh/Projects/Antigravity-Engineering-Mentor/.ai/runtime' });
+    const results = await v.validate({ kind: ValidationTargetKind.Repository, path: process.cwd() });
     expect(results.some(r => r.isPassed)).toBe(true);
   });
 
   it('fails when required path missing', async () => {
     const v = new RepositoryStructureValidator(['nonexistent-dir-xyz']);
-    const results = await v.validate({ kind: ValidationTargetKind.Repository, path: '/home/laksh/Projects/Antigravity-Engineering-Mentor/.ai/runtime' });
+    const results = await v.validate({ kind: ValidationTargetKind.Repository, path: process.cwd() });
     expect(results.some(r => r.isFailed)).toBe(true);
   });
 });
@@ -29,13 +29,13 @@ describe('RepositoryStructureValidator', () => {
 describe('MilestoneValidator', () => {
   it('passes when artifact exists', async () => {
     const v = new MilestoneValidator(['src/validation/types.ts']);
-    const results = await v.validate({ kind: ValidationTargetKind.Milestone, path: '/home/laksh/Projects/Antigravity-Engineering-Mentor/.ai/runtime' });
+    const results = await v.validate({ kind: ValidationTargetKind.Milestone, path: process.cwd() });
     expect(results[0]!.isPassed).toBe(true);
   });
 
   it('fails when artifact missing', async () => {
     const v = new MilestoneValidator(['nonexistent.ts']);
-    const results = await v.validate({ kind: ValidationTargetKind.Milestone, path: '/home/laksh/Projects/Antigravity-Engineering-Mentor/.ai/runtime' });
+    const results = await v.validate({ kind: ValidationTargetKind.Milestone, path: process.cwd() });
     expect(results[0]!.isFailed).toBe(true);
   });
 });
