@@ -13,8 +13,9 @@ export class GetRepositorySummaryTool implements Tool<void, unknown> {
   readonly descriptor: ToolDescriptor = {
     name: 'GetRepositorySummary',
     description: 'Retrieves a summary of the repository including total symbols, edges, and nodes.',
-    category: 'Repository',
+    category: 'Foundation',
     version: new SemanticVersion(1, 0, 0),
+    visibility: 'public',
     parameters: {
       type: 'object',
       properties: {},

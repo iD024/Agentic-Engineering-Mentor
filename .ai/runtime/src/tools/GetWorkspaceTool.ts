@@ -13,8 +13,9 @@ export class GetWorkspaceTool implements Tool<{ workspaceId: string }, unknown> 
   readonly descriptor: ToolDescriptor = {
     name: 'GetWorkspace',
     description: 'Retrieves the workspace by ID.',
-    category: 'Workspace',
+    category: 'Foundation',
     version: new SemanticVersion(1, 0, 0),
+    visibility: 'public',
     parameters: {
       type: 'object',
       properties: {

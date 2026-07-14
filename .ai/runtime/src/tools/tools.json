@@ -1,9 +1,0 @@
-{
-  "builtInTools": [
-    "./GetRepositorySummaryTool.js",
-    "./GetWorkspaceTool.js",
-    "./FindDefinitionTool.js",
-    "./ImpactAnalysisTool.js",
-    "./CompleteMilestoneTool.js"
-  ]
-}

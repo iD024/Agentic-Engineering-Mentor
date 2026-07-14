@@ -117,9 +117,45 @@ export class RuntimeGateway implements TransportHandler {
       const tools = this.toolRegistry.getAll().map(t => ({
         name: t.descriptor.name,
         description: t.descriptor.description,
-        inputSchema: t.descriptor.parameters
+        inputSchema: t.descriptor.parameters,
+        category: t.descriptor.category,
+        version: t.descriptor.version.toString(),
+        visibility: t.descriptor.visibility
       }));
-      return { tools };
+
+      const categories = tools.reduce((acc, tool) => {
+        if (!acc[tool.category]) acc[tool.category] = [];
+        acc[tool.category].push(tool);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      return { tools, categories };
+    }
+
+    if (request.method === 'tools/describe') {
+      const params = request.params as { name: string };
+      const tool = this.toolRegistry.get(params.name);
+      if (!tool) {
+        throw new Error(`Tool not found: ${params.name}`);
+      }
+      return {
+        tool: {
+          name: tool.descriptor.name,
+          description: tool.descriptor.description,
+          category: tool.descriptor.category,
+          version: tool.descriptor.version.toString(),
+          permissions: tool.descriptor.permissions || [],
+          inputSchema: tool.descriptor.parameters,
+          outputSchema: tool.descriptor.outputSchema,
+          examples: tool.descriptor.examples || [],
+          visibility: tool.descriptor.visibility
+        }
+      };
+    }
+
+    if (request.method === 'tools/categories') {
+      const categories = Array.from(new Set(this.toolRegistry.getAll().map(t => t.descriptor.category)));
+      return { categories };
     }
 
     if (request.method === 'tools/call') {

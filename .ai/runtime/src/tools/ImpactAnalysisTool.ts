@@ -13,8 +13,9 @@ export class ImpactAnalysisTool implements Tool<{ targetNodeIds: string[] }, unk
   readonly descriptor: ToolDescriptor = {
     name: 'ImpactAnalysis',
     description: 'Analyzes the impact of changes to a specific node in the repository.',
-    category: 'Analysis',
+    category: 'Foundation',
     version: new SemanticVersion(1, 0, 0),
+    visibility: 'public',
     parameters: {
       type: 'object',
       properties: {

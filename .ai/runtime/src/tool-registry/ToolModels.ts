@@ -1,8 +1,14 @@
 export type ToolCategory =
+  | 'Foundation'
   | 'Workspace'
   | 'Repository'
   | 'Learning'
   | 'Session'
+  | 'Knowledge'
+  | 'Validation'
+  | 'Pedagogical'
+  | 'Runtime'
+  | 'Tooling'
   | 'Analysis'
   | 'System'
   | 'Other';
@@ -27,7 +33,11 @@ export interface ToolDescriptor {
   description: string;
   category: ToolCategory;
   version: ToolVersion;
+  permissions?: string[];
   parameters: Record<string, unknown>; // JSON Schema for parameters
+  outputSchema?: Record<string, unknown>; // JSON Schema for output
+  examples?: Array<{ name: string; description: string; input: unknown; output?: unknown }>;
+  visibility: 'public' | 'internal';
 }
 
 export interface ToolManifest {

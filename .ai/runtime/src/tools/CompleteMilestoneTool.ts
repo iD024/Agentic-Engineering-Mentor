@@ -13,8 +13,9 @@ export class CompleteMilestoneTool implements Tool<{ milestoneId: string }, unkn
   readonly descriptor: ToolDescriptor = {
     name: 'CompleteMilestone',
     description: 'Marks a specific milestone as complete.',
-    category: 'Workspace',
+    category: 'Foundation',
     version: new SemanticVersion(1, 0, 0),
+    visibility: 'public',
     parameters: {
       type: 'object',
       properties: {

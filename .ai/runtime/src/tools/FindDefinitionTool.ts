@@ -13,8 +13,9 @@ export class FindDefinitionTool implements Tool<{ symbolName: string }, unknown>
   readonly descriptor: ToolDescriptor = {
     name: 'FindDefinition',
     description: 'Finds the definition of a symbol in the repository.',
-    category: 'Repository',
+    category: 'Foundation',
     version: new SemanticVersion(1, 0, 0),
+    visibility: 'public',
     parameters: {
       type: 'object',
       properties: {
