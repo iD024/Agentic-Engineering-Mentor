@@ -81,4 +81,33 @@ export class Database {
     }
     this._connection = null;
   }
+
+  /**
+   * Migrates an in-memory database to a physical disk file and reopens the connection
+   * using the new file.
+   *
+   * @param newPath - Absolute path to the physical SQLite file.
+   */
+  async migrateToDisk(newPath: string): Promise<void> {
+    if (this._connection === null) {
+      throw new Error('Database is not open.');
+    }
+
+    if (this.config.path !== ':memory:') {
+      throw new Error('Can only migrate an in-memory database to disk.');
+    }
+
+    // better-sqlite3 backup returns a Promise
+    await this._connection.backup(newPath);
+
+    this.close();
+
+    // Recreate the config object to point to the new disk file
+    (this as any).config = {
+      ...this.config,
+      path: newPath,
+    };
+
+    this.open();
+  }
 }

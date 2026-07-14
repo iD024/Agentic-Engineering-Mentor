@@ -1,13 +1,21 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { ICommandHandler } from './interfaces.js';
 import { CreateWorkspaceCommand, CreateWorkspaceResult } from './CreateWorkspaceCommand.js';
 import type { StateManager } from '../../state/StateManager.js';
+import type { Database } from '../../database/Database.js';
+import type { EventBus } from '../../events/bus/EventBus.js';
 
 export class CreateWorkspaceCommandHandler implements ICommandHandler<CreateWorkspaceCommand, CreateWorkspaceResult> {
   readonly commandType = 'CreateWorkspaceCommand';
 
-  constructor(private readonly stateManager: StateManager) {}
+  constructor(
+    private readonly stateManager: StateManager,
+    private readonly database: Database,
+    private readonly dbPath: string,
+    private readonly eventBus: EventBus
+  ) {}
 
   async execute(command: CreateWorkspaceCommand): Promise<CreateWorkspaceResult> {
     const { name, description, workspaceRoot } = command.payload;
@@ -26,20 +34,31 @@ export class CreateWorkspaceCommandHandler implements ICommandHandler<CreateWork
     };
     
     try {
-      // 1. Create Workspace Directories
+      // 1. Check if workspace already exists
+      const workspaceJsonPath = path.join(aiDir, 'workspace.json');
+      try {
+        const stat = await fs.stat(workspaceJsonPath);
+        if (stat.isFile()) {
+           result.details.errors.push('workspace.json already exists. Use load instead of create.');
+           result.message = 'Workspace already exists.';
+           return result;
+        }
+      } catch {}
+
+      // 2. Create Workspace Directories
       const dirs = [
         'context',
         'docs',
         'profiles',
         'templates',
-        'knowledge',
         'repositories',
+        'knowledge',
         'sessions',
         'validation',
         'logs',
         'exports',
         'imports',
-        'data' // added data dir for DB
+        'data'
       ];
       
       for (const dir of dirs) {
@@ -55,87 +74,78 @@ export class CreateWorkspaceCommandHandler implements ICommandHandler<CreateWork
         }
       }
 
-      // 2. Initialize workspace.json
-      const workspaceJsonPath = path.join(aiDir, 'workspace.json');
-      let workspaceJsonExists = false;
+      // 3. Migrate the in-memory database to the newly created data directory
       try {
-        const stat = await fs.stat(workspaceJsonPath);
-        workspaceJsonExists = stat.isFile();
-      } catch {}
-
-      if (!workspaceJsonExists) {
-        const workspaceJsonData = {
-          name: name,
-          description: description || '',
-          version: '2.0.0',
-          created_at: new Date().toISOString(),
-          workspace: {
-            initialized: true,
-            state: "planning",
-            currentMilestone: null,
-            lastSynchronization: new Date().toISOString(),
-            repositoryFingerprint: ""
-          },
-          initialization: {
-            projectUnderstanding: "missing",
-            repositoryKnowledge: "missing",
-            curriculum: "missing",
-            projectMemory: "missing",
-            learningProgress: "missing",
-            workspaceStatus: "missing",
-            milestones: "missing",
-            session: "missing",
-            mistakeLogger: "missing"
-          },
-          profiles: { installed: [], active: [] },
-          skills: { enabled: [] },
-          contextVersions: {
-            projectContext: "1.0",
-            projectUnderstanding: "1.0",
-            repositoryKnowledge: "1.0",
-            projectMemory: "1.0",
-            curriculum: "1.0",
-            learningProgress: "1.0",
-            workspaceStatus: "1.0",
-            session: "1.0"
-          },
-          featureFlags: { strictMode: true, experimentalSkills: false }
-        };
-        await fs.writeFile(workspaceJsonPath, JSON.stringify(workspaceJsonData, null, 2));
-        result.details.updatedFiles.push('workspace.json');
+        if (this.database.isOpen() && (this.database as any).config.path === ':memory:') {
+          await this.database.migrateToDisk(this.dbPath);
+          result.details.dbChanges.push(`Migrated SQLite database to ${this.dbPath}`);
+        } else {
+          result.details.warnings.push('Database is already on disk, skipped migration.');
+        }
+      } catch (err) {
+        result.details.errors.push(`Failed to migrate database to disk: ${err instanceof Error ? err.message : String(err)}`);
+        result.message = 'Database migration failed.';
+        return result;
       }
 
-      // 3. Initialize Database State
-      let existingWorkspace = null;
-      try {
-         const allWorkspaces = this.stateManager.loadAllWorkspaces ? this.stateManager.loadAllWorkspaces() : [];
-         if (allWorkspaces.length > 0) {
-             existingWorkspace = allWorkspaces[0];
-         }
-      } catch {
-         // stateManager might not support loadAllWorkspaces, just catch.
-      }
-
-      if (!existingWorkspace) {
-        const workspace = this.stateManager.createWorkspace({
-          name,
-          description
-        });
-        
-        this.stateManager.updateWorkspace(workspace.id, {
+      // 4. Initialize workspace.json
+      const workspaceJsonData = {
+        name: name,
+        description: description || '',
+        version: '2.0.0',
+        created_at: new Date().toISOString(),
+        workspace: {
           initialized: true,
-          state: 'active'
-        });
-        result.details.dbChanges.push(`Created workspace ${workspace.id}`);
-        
-        // Default Profile / Session metadata could be added here
-        const session = this.stateManager.createSession({ workspaceId: workspace.id, goals: ['Initial Workspace Setup'] });
-        result.details.dbChanges.push(`Created initial session ${session.id}`);
-      } else {
-        result.details.warnings.push('Workspace already exists in database, skipping DB initialization.');
-      }
+          state: "planning",
+          currentMilestone: null,
+          lastSynchronization: new Date().toISOString(),
+          repositoryFingerprint: ""
+        },
+        initialization: {
+          projectUnderstanding: "missing",
+          repositoryKnowledge: "missing",
+          curriculum: "missing",
+          projectMemory: "missing",
+          learningProgress: "missing",
+          workspaceStatus: "missing",
+          milestones: "missing",
+          session: "missing",
+          mistakeLogger: "missing"
+        },
+        profiles: { installed: [], active: [] },
+        skills: { enabled: [] },
+        contextVersions: {
+          projectContext: "1.0",
+          projectUnderstanding: "1.0",
+          repositoryKnowledge: "1.0",
+          projectMemory: "1.0",
+          curriculum: "1.0",
+          learningProgress: "1.0",
+          workspaceStatus: "1.0",
+          session: "1.0"
+        },
+        featureFlags: { strictMode: true, experimentalSkills: false }
+      };
+      await fs.writeFile(workspaceJsonPath, JSON.stringify(workspaceJsonData, null, 2));
+      result.details.updatedFiles.push('workspace.json');
 
-      // 4. Verification
+      // 5. Initialize Database State
+      const workspace = this.stateManager.createWorkspace({
+        name,
+        description
+      });
+      
+      this.stateManager.updateWorkspace(workspace.id, {
+        initialized: true,
+        state: 'active'
+      });
+      result.details.dbChanges.push(`Created workspace ${workspace.id}`);
+      this.stateManager.setSetting('workspace.primaryId', workspace.id);
+      
+      const session = this.stateManager.createSession({ workspaceId: workspace.id, goals: ['Initial Workspace Setup'] });
+      result.details.dbChanges.push(`Created initial session ${session.id}`);
+
+      // 6. Verification
       const verifyDirs = await Promise.all(dirs.map(async (dir) => {
         try {
           const stat = await fs.stat(path.join(aiDir, dir));
@@ -162,6 +172,29 @@ export class CreateWorkspaceCommandHandler implements ICommandHandler<CreateWork
           result.success = false;
           result.message = 'Workspace initialization encountered errors.';
           return result;
+      }
+
+      // 7. Emit WorkspaceCreated Event
+      let eventEmitted = false;
+      try {
+        this.eventBus.publish({
+          eventId: randomUUID(),
+          id: workspace.id,
+          type: 'WorkspaceCreated',
+          timestamp: new Date().toISOString(),
+          source: 'CreateWorkspaceCommand',
+          version: 1,
+          payload: { workspace }
+        });
+        eventEmitted = true;
+      } catch (e) {
+        result.details.errors.push(`Failed to emit WorkspaceCreated event: ${e instanceof Error ? e.message : String(e)}`);
+      }
+
+      if (!eventEmitted) {
+        result.success = false;
+        result.message = 'Workspace created but failed to emit event.';
+        return result;
       }
 
       result.success = true;

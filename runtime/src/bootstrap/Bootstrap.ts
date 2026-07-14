@@ -181,18 +181,27 @@ export class Bootstrap {
       };
 
       // 11: Database + Migrations
-      const dbDir = path.join(config.workspaceRoot, '.ai', 'data');
+      const fs = await import('node:fs');
+      const aiDir = path.join(config.workspaceRoot, '.ai');
+      const workspaceJsonPath = path.join(aiDir, 'workspace.json');
+      const dbDir = path.join(aiDir, 'data');
       const dbPath = path.join(dbDir, 'workspace.db');
       
-      const fs = await import('node:fs');
-      fs.mkdirSync(dbDir, { recursive: true });
+      const workspaceExists = fs.existsSync(workspaceJsonPath);
       
       const dbConfig: DatabaseConfig = {
-        path: config.nodeEnv === 'test' ? ':memory:' : dbPath,
+        path: config.nodeEnv === 'test' || !workspaceExists ? ':memory:' : dbPath,
         walMode: true,
         timeout: 5000,
         verbose: config.nodeEnv === 'development',
       };
+      
+      // Only ensure data directory exists if we are going to use the disk file immediately.
+      // If the workspace does not exist, the db will be :memory: and we MUST NOT create the directory here.
+      if (dbConfig.path !== ':memory:') {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+
       database = new Database(dbConfig);
       database.open();
       logger.info('Database opened', { path: dbConfig.path });
@@ -296,7 +305,7 @@ export class Bootstrap {
       // 17.9: CommandBus
       const commandBus = new CommandBus();
       commandBus.register(new CompleteMilestoneCommandHandler(stateManager, eventBus));
-      commandBus.register(new CreateWorkspaceCommandHandler(stateManager));
+      commandBus.register(new CreateWorkspaceCommandHandler(stateManager, database, dbPath, eventBus));
       commandBus.register(new ImportRepositoryCommandHandler());
       commandBus.register(new ImportKnowledgeCommandHandler());
       logger.info('CommandBus initialised');
