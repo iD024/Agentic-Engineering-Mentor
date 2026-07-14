@@ -66,7 +66,7 @@ import * as Queries from '../repository-queries/index.js';
 import * as Knowledge from '../knowledge/index.js';
 import { CommandBus } from '../core/cqrs/CommandBus.js';
 import * as Agents from '../agents/index.js';
-import { GetWorkspaceQueryHandler, CompleteMilestoneCommandHandler } from '../core/cqrs/index.js';
+import { GetWorkspaceQueryHandler, CompleteMilestoneCommandHandler, CreateWorkspaceCommandHandler, GetWorkspaceSummaryQueryHandler } from '../core/cqrs/index.js';
 import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
 import { ToolRegistry, ToolLoader } from '../tool-registry/index.js';
 import { SessionManager } from '../sessions/SessionManager.js';
@@ -181,7 +181,7 @@ export class Bootstrap {
       };
 
       // 11: Database + Migrations
-      const dbDir = path.join(config.workspaceRoot, '.ai', 'runtime');
+      const dbDir = path.join(config.workspaceRoot, 'runtime', 'data');
       const dbPath = path.join(dbDir, 'workspace.db');
       
       const fs = await import('node:fs');
@@ -270,6 +270,7 @@ export class Bootstrap {
       queryBus.register(new Queries.FindSymbolQueryHandler(symbolTable));
       queryBus.register(new Queries.ListModulesQueryHandler(symbolTable));
       queryBus.register(new GetWorkspaceQueryHandler(stateManager));
+      queryBus.register(new GetWorkspaceSummaryQueryHandler(stateManager));
       logger.info('Repository Intelligence Engine initialised');
 
       // 17.8: Engineering Knowledge Platform (Stage 7)
@@ -295,6 +296,7 @@ export class Bootstrap {
       // 17.9: CommandBus
       const commandBus = new CommandBus();
       commandBus.register(new CompleteMilestoneCommandHandler(stateManager, eventBus));
+      commandBus.register(new CreateWorkspaceCommandHandler(stateManager));
       logger.info('CommandBus initialised');
 
       // 18: Register all services in container

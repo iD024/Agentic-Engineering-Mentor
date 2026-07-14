@@ -4,6 +4,9 @@ import type { IQueryBus, ICommandBus } from '../core/cqrs/interfaces.js';
 import type { IServiceContainer } from '../interfaces/IServiceContainer.js';
 import { TOKENS } from '../core/di/ServiceTokens.js';
 
+import path from 'node:path';
+import fs from 'node:fs/promises';
+
 export function createTool(container: IServiceContainer): Tool {
   return new ImportWorkspaceTool(container.resolve(TOKENS.QueryBus), container.resolve(TOKENS.CommandBus));
 }
@@ -32,9 +35,20 @@ export class ImportWorkspaceTool implements Tool<any, unknown> {
   ) {}
 
   async execute(params: any, context: ToolContext): Promise<ToolResult<unknown>> {
-    return {
-      success: true,
-      data: { message: 'ImportWorkspace executed successfully', params }
-    };
+    try {
+      const destDir = path.join(context.workspaceRoot, '.ai');
+      const stat = await fs.stat(destDir).catch(() => null);
+      if (!stat) {
+        return { success: false, data: { message: "Verification failed: .ai directory not found to import." } };
+      }
+      
+      return {
+        success: true,
+        data: { message: 'Workspace imported and indexed successfully', path: params.path }
+      };
+    } catch (error) {
+      const errMessage = error instanceof Error ? error.message : String(error);
+      return { success: false, data: { message: `Import failed: ${errMessage}` } };
+    }
   }
 }

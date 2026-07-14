@@ -4,6 +4,8 @@ import type { IQueryBus, ICommandBus } from '../core/cqrs/interfaces.js';
 import type { IServiceContainer } from '../interfaces/IServiceContainer.js';
 import { TOKENS } from '../core/di/ServiceTokens.js';
 
+import { CreateWorkspaceCommand } from '../core/cqrs/index.js';
+
 export function createTool(container: IServiceContainer): Tool {
   return new CreateWorkspaceTool(container.resolve(TOKENS.QueryBus), container.resolve(TOKENS.CommandBus));
 }
@@ -32,9 +34,23 @@ export class CreateWorkspaceTool implements Tool<any, unknown> {
   ) {}
 
   async execute(params: any, context: ToolContext): Promise<ToolResult<unknown>> {
-    return {
-      success: true,
-      data: { message: 'CreateWorkspace executed successfully', params }
-    };
+    const command = new CreateWorkspaceCommand({
+      name: params.name,
+      workspaceRoot: context.workspaceRoot
+    });
+    
+    try {
+      const result = await this.commandBus.execute(command) as { success: boolean, message: string };
+      return {
+        success: result.success,
+        data: result
+      };
+    } catch (error) {
+      const errMessage = error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        data: { message: `Execution failed: ${errMessage}` }
+      };
+    }
   }
 }
