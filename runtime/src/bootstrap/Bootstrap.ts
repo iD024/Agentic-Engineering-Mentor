@@ -68,7 +68,7 @@ import { CommandBus } from '../core/cqrs/CommandBus.js';
 import * as Agents from '../agents/index.js';
 import { GetWorkspaceQueryHandler, CompleteMilestoneCommandHandler, CreateWorkspaceCommandHandler, GetWorkspaceSummaryQueryHandler, ImportRepositoryCommandHandler, ImportKnowledgeCommandHandler } from '../core/cqrs/index.js';
 import { RuntimeGateway } from '../gateway/RuntimeGateway.js';
-import { ToolRegistry, ToolLoader } from '../tool-registry/index.js';
+import { ToolRegistry, ToolRegistryInitializer } from '../tool-registry/index.js';
 import { SessionManager } from '../sessions/SessionManager.js';
 import { ExecutionTracer } from '../telemetry/ExecutionTracer.js';
 import { MetricsCollector } from '../telemetry/MetricsCollector.js';
@@ -340,9 +340,9 @@ export class Bootstrap {
       
       const mcpServer = new MCPServer(gateway);
 
-      // Load tools automatically
-      const toolLoader = new ToolLoader(container, toolRegistry);
-      await toolLoader.discoverAndLoad();
+      // Load tools statically
+      const toolRegistryInitializer = new ToolRegistryInitializer(container, toolRegistry);
+      await toolRegistryInitializer.initialize();
 
       container.registerInstance(TOKENS.RuntimeGateway, gateway);
       container.registerInstance(TOKENS.ToolRegistry, toolRegistry);
