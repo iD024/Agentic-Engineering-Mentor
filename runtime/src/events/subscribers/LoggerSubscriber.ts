@@ -18,7 +18,7 @@ export class LoggerSubscriber implements EventSubscriber {
       return {
         handle: async (event: Event) => {
           // Domain specific logging beyond the middleware
-          console.log(`[LoggerSubscriber] Detailed log for ${event.type}:`, JSON.stringify(event.payload));
+          process.stderr.write(`[LoggerSubscriber] Detailed log for ${event.type}: ${JSON.stringify(event.payload)}\n`);
         }
       };
     }

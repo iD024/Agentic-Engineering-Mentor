@@ -11,7 +11,7 @@ export class ExporterSubscriber implements EventSubscriber {
     if (this.supportedEvents.includes(eventType)) {
       return {
         handle: async (event: Event) => {
-          console.log(`[ExporterSubscriber] Handling export event to destination:`, (event.payload as Record<string, unknown>).destinationPath);
+          process.stderr.write(`[ExporterSubscriber] Handling export event to destination: ${(event.payload as Record<string, unknown>).destinationPath}\n`);
           // Actual export logic trigger would go here if this was hooked into an exporter service
         }
       };

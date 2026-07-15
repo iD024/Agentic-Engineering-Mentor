@@ -15,7 +15,7 @@ export class HealthMonitorSubscriber implements EventSubscriber {
       return {
         handle: async (event: Event) => {
           if (event.type === 'DatabaseDisconnected' || event.type === 'RuntimeStopping') {
-            console.warn(`[HealthMonitorSubscriber] Warning: System component degraded - ${event.type}`);
+            process.stderr.write(`[HealthMonitorSubscriber] Warning: System component degraded - ${event.type}\n`);
             // Could trigger alerts here
           }
         }
