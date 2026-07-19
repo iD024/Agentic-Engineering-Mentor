@@ -5,6 +5,7 @@ import { XtermBridge } from './XtermBridge';
 import { useTerminalGrid } from './useTerminalGrid';
 import { AstBridge } from './AstBridge';
 import { WorkspaceWatcher } from './WorkspaceWatcher';
+import { usePedagogicalStore } from './store';
 import * as pty from 'node-pty';
 import * as os from 'os';
 
@@ -20,24 +21,14 @@ export const App = ({
     const [activePane, setActivePane] = useState(1);
     const [editorBridge, setEditorBridge] = useState<XtermBridge | null>(null);
     const [shellBridge, setShellBridge] = useState<XtermBridge | null>(null);
-    const [lastValidation, setLastValidation] = useState<string>('No file saved yet');
+    
+    const { objective, status, activeHint } = usePedagogicalStore();
 
     useEffect(() => {
         const handlePaneSwitch = (paneId: number) => {
             setActivePane(paneId);
         };
         router.on('pane_switch', handlePaneSwitch);
-
-        const handleFileSaved = async (filePath: string) => {
-            setLastValidation(`Validating ${filePath}...`);
-            const result = await astBridge.validate(filePath, 'CHECK_RULES');
-            if (result.passed) {
-                setLastValidation(`Passed: ${filePath}`);
-            } else {
-                setLastValidation(`Failed: ${filePath} - ${result.error}`);
-            }
-        };
-        watcher.on('FILE_SAVED', handleFileSaved);
 
         const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
         
@@ -58,11 +49,10 @@ export const App = ({
         return () => {
             router.off('pane_switch', handlePaneSwitch);
             router.off('data', handleInput);
-            watcher.off('FILE_SAVED', handleFileSaved);
             editorPty.kill();
             executionPty.kill();
         };
-    }, [router, activePane, watcher, astBridge]);
+    }, [router, activePane]);
 
     const editorLines = useTerminalGrid(editorBridge);
     const shellLines = useTerminalGrid(shellBridge);
@@ -76,8 +66,18 @@ export const App = ({
                 <Box height="70%" borderStyle="single" borderColor={activePane === 3 ? 'green' : 'gray'} flexDirection="column">
                     <Text bold>Pane 3 (Socratic Mentor)</Text>
                     <Box marginTop={1}>
-                        <Text color="cyan">{lastValidation}</Text>
+                        <Text color="cyan">Objective: {objective}</Text>
                     </Box>
+                    <Box marginTop={1}>
+                        <Text color={status === 'SUCCESS' ? 'green' : status === 'VALIDATING' ? 'yellow' : 'white'}>
+                            Status: {status}
+                        </Text>
+                    </Box>
+                    {activeHint && (
+                        <Box marginTop={1}>
+                            <Text color="red">{activeHint}</Text>
+                        </Box>
+                    )}
                 </Box>
                 <Box height="30%" borderStyle="single" borderColor={activePane === 2 ? 'green' : 'gray'} flexDirection="column">
                     {shellLines.map((line, i) => <Text key={i} wrap="truncate">{line}</Text>)}
