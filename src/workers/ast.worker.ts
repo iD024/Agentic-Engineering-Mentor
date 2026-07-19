@@ -16,7 +16,7 @@ process.on('message', (msg: any) => {
             // In the future, this is where we would execute the S-expression query 
             // against the parsed AST to check for pedagogical constraints.
             // For Phase 3, we simply prove parsing works without crashing.
-            const passed = tree.rootNode.hasError() ? false : true;
+            const passed = tree.rootNode.hasError ? false : true;
 
             process.send?.({
                 type: 'PARSE_RESULT',

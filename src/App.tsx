@@ -3,13 +3,24 @@ import { Box, Text } from 'ink';
 import { InputRouter } from './InputRouter';
 import { XtermBridge } from './XtermBridge';
 import { useTerminalGrid } from './useTerminalGrid';
+import { AstBridge } from './AstBridge';
+import { WorkspaceWatcher } from './WorkspaceWatcher';
 import * as pty from 'node-pty';
 import * as os from 'os';
 
-export const App = ({ router }: { router: InputRouter }) => {
+export const App = ({ 
+    router, 
+    astBridge, 
+    watcher 
+}: { 
+    router: InputRouter; 
+    astBridge: AstBridge; 
+    watcher: WorkspaceWatcher; 
+}) => {
     const [activePane, setActivePane] = useState(1);
     const [editorBridge, setEditorBridge] = useState<XtermBridge | null>(null);
     const [shellBridge, setShellBridge] = useState<XtermBridge | null>(null);
+    const [lastValidation, setLastValidation] = useState<string>('No file saved yet');
 
     useEffect(() => {
         const handlePaneSwitch = (paneId: number) => {
@@ -17,7 +28,17 @@ export const App = ({ router }: { router: InputRouter }) => {
         };
         router.on('pane_switch', handlePaneSwitch);
 
-        // Spawn PTYs
+        const handleFileSaved = async (filePath: string) => {
+            setLastValidation(`Validating ${filePath}...`);
+            const result = await astBridge.validate(filePath, 'CHECK_RULES');
+            if (result.passed) {
+                setLastValidation(`Passed: ${filePath}`);
+            } else {
+                setLastValidation(`Failed: ${filePath} - ${result.error}`);
+            }
+        };
+        watcher.on('FILE_SAVED', handleFileSaved);
+
         const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
         
         const editorPty = pty.spawn(shell, [], { cols: 80, rows: 24, name: 'xterm-256color', env: process.env as any });
@@ -37,10 +58,11 @@ export const App = ({ router }: { router: InputRouter }) => {
         return () => {
             router.off('pane_switch', handlePaneSwitch);
             router.off('data', handleInput);
+            watcher.off('FILE_SAVED', handleFileSaved);
             editorPty.kill();
             executionPty.kill();
         };
-    }, [router, activePane]);
+    }, [router, activePane, watcher, astBridge]);
 
     const editorLines = useTerminalGrid(editorBridge);
     const shellLines = useTerminalGrid(shellBridge);
@@ -51,8 +73,11 @@ export const App = ({ router }: { router: InputRouter }) => {
                 {editorLines.map((line, i) => <Text key={i} wrap="truncate">{line}</Text>)}
             </Box>
             <Box width="40%" flexDirection="column">
-                <Box height="70%" borderStyle="single" borderColor={activePane === 3 ? 'green' : 'gray'}>
-                    <Text>Pane 3 (Socratic Mentor)</Text>
+                <Box height="70%" borderStyle="single" borderColor={activePane === 3 ? 'green' : 'gray'} flexDirection="column">
+                    <Text bold>Pane 3 (Socratic Mentor)</Text>
+                    <Box marginTop={1}>
+                        <Text color="cyan">{lastValidation}</Text>
+                    </Box>
                 </Box>
                 <Box height="30%" borderStyle="single" borderColor={activePane === 2 ? 'green' : 'gray'} flexDirection="column">
                     {shellLines.map((line, i) => <Text key={i} wrap="truncate">{line}</Text>)}
