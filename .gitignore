@@ -1,5 +1,3 @@
-# Legacy Antigravity Prompts
-.ai/v1-legacy/
-
-# Antigravity Workspace Directory
-.ai/
+node_modules/
+dist/
+tests/
