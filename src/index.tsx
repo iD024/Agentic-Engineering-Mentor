@@ -6,6 +6,7 @@ import { AstBridge } from './AstBridge';
 import { WorkspaceWatcher } from './WorkspaceWatcher';
 import { Database } from './Database';
 import { startSocraticMachine } from './SocraticMachine';
+import { bootstrapProject } from './Bootstrapper';
 
 const enterAltScreenCommand = '\x1b[?1049h';
 const leaveAltScreenCommand = '\x1b[?1049l';
@@ -19,6 +20,7 @@ async function bootstrap() {
     const db = new Database();
     
     await db.init();
+    await bootstrapProject(db);
     const socraticService = startSocraticMachine(db, astBridge);
 
     // Forward watcher events to XState instead of directly to AstBridge
