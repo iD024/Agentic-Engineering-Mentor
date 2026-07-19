@@ -36,7 +36,8 @@ export const App = ({
         const eBridge = new XtermBridge(editorPty, 80, 24);
         setEditorBridge(eBridge);
 
-        const executionPty = pty.spawn(shell, [], { cols: 40, rows: 10, name: 'xterm-256color', env: process.env as any });
+        const executionArgs = os.platform() === 'win32' ? [] : ['-l', '-c', 'exec agy'];
+        const executionPty = pty.spawn(shell, executionArgs, { cols: 40, rows: 10, name: 'xterm-256color', env: process.env as any });
         const sBridge = new XtermBridge(executionPty, 40, 10);
         setShellBridge(sBridge);
 
