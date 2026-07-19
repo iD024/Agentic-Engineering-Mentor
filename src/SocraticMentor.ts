@@ -1,10 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
-
+// Dynamic import used inside the function
 export async function generateHint(objective: string, constraint: string, level: string): Promise<string> {
     if (!process.env.GEMINI_API_KEY) {
         return `[Fallback] Hint for ${level}: Please review ${constraint}`;
     }
 
+    const { GoogleGenAI } = await import('@google/genai');
     const ai = new GoogleGenAI({});
     const prompt = `Objective: ${objective}\nFailed Constraint: ${constraint}\nEscalation Level: ${level}\nProvide a hint.`;
     
